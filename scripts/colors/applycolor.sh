@@ -49,7 +49,7 @@ if not colors:
 # QuickShell consumes the same palette as JSON. Keeping this generated from
 # the SCSS output avoids a hard dependency on a separate Matugen template.
 with open(json_file, 'w') as f:
-    json.dump(colors, f, indent=2)
+    json.dump({key: f'#{value}' for key, value in colors.items()}, f, indent=2)
     f.write('\n')
 
 # Replace in Kitty theme
