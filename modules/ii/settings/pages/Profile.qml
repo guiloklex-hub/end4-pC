@@ -86,7 +86,7 @@ ContentPage {
                     onConfirmClicked: {
                         GlobalStates.settingsOpen = false
                         if (Config.options.profile.avatarPath !== "") {
-                            Quickshell.execDetached(["dolphin", Config.options.profile.avatarPath])
+                            Applications.launchCommand(["dolphin", Config.options.profile.avatarPath])
                         }
                     }
                 }

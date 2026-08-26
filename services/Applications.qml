@@ -5,11 +5,12 @@ import Quickshell
 Singleton {
     id: root
 
-    function launchCommand(command, inTerminal = false) {
+    function launchCommand(command, inTerminal = false, slice = "a") {
         const argv = Array.from(command ?? [])
         if (argv.length === 0) return false
 
         const uwsmArgs = ["uwsm-app"]
+        if (slice !== "a") uwsmArgs.push("-s", slice)
         if (inTerminal) uwsmArgs.push("-T")
         uwsmArgs.push("--", ...argv)
         Quickshell.execDetached(uwsmArgs)

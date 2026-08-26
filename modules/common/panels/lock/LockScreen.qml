@@ -94,7 +94,7 @@ Scope {
 
     function lock() {
         if (Config.options.lock.useHyprlock) {
-            Quickshell.execDetached(["bash", "-c", "pidof hyprlock || hyprlock"]);
+            Applications.launchCommand(["bash", "-c", "pidof hyprlock || exec hyprlock"], false, "s");
             return;
         }
         GlobalStates.screenLocked = true;

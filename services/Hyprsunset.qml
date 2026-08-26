@@ -85,7 +85,7 @@ Singleton {
 
     function startHyprsunset() {
         if (root.isNiri) return;
-        Quickshell.execDetached(["bash", "-c", `pidof hyprsunset || hyprsunset`]);
+        Applications.launchCommand(["bash", "-c", "pidof hyprsunset || exec hyprsunset"], false, "b");
     }
 
     function load() {
@@ -93,7 +93,7 @@ Singleton {
             root.disableTemperature();
             return;
         }
-        Quickshell.execDetached(["bash", "-c", `pidof hyprsunset || hyprsunset & disown; sleep 0.3; hyprctl hyprsunset identity`]);
+        Applications.launchCommand(["bash", "-c", "pidof hyprsunset || hyprsunset & disown; sleep 0.3; hyprctl hyprsunset identity"], false, "b");
         root.temperatureActive = false;
     }
 

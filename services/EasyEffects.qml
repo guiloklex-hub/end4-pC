@@ -30,7 +30,7 @@ Singleton {
 
     function enable() {
         root.active = true
-        Quickshell.execDetached(["bash", "-c", "easyeffects --hide-window --service-mode || flatpak run com.github.wwmm.easyeffects --hide-window --service-mode"])
+        Applications.launchCommand(["bash", "-c", "easyeffects --hide-window --service-mode || exec flatpak run com.github.wwmm.easyeffects --hide-window --service-mode"], false, "b")
     }
 
     function toggle() {

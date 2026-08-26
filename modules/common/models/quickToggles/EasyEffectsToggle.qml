@@ -22,7 +22,7 @@ QuickToggleModel {
     }
 
     altAction: () => {
-        Quickshell.execDetached(["bash", "-c", "flatpak run com.github.wwmm.easyeffects || easyeffects"])
+        Applications.launchCommand(["bash", "-c", "flatpak run com.github.wwmm.easyeffects || exec easyeffects"])
         GlobalStates.sidebarRightOpen = false
     }
 

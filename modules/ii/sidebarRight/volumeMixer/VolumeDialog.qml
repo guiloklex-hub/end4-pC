@@ -31,7 +31,7 @@ WindowDialog {
         DialogButton {
             buttonText: Translation.tr("Details")
             onClicked: {
-                Quickshell.execDetached(["bash", "-c", `${Config.options.apps.volumeMixer}`]);
+                Applications.launchCommand(["bash", "-lc", `${Config.options.apps.volumeMixer}`]);
                 GlobalStates.sidebarRightOpen = false;
             }
         }

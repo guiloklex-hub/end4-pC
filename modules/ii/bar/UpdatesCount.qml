@@ -41,9 +41,9 @@ MouseArea {
     Process {
         id: updateProc
         command: [
-            "kitty", "--hold",
+            "uwsm-app", "--", "kitty", "--hold",
             "fish", "-i", "-l", "-c",
-            "yay -Syu --combinedupgrade=false"
+            "paru -Syu"
         ]
         onExited: (exitCode, exitStatus) => {
             Updates.refresh()
