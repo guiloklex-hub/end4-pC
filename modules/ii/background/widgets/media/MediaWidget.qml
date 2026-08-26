@@ -123,7 +123,7 @@ AbstractBackgroundWidget {
         id: coverArtDownloader
         property string targetFile: root.artUrl
         property string artFilePath: root.artFilePath
-        command: ["curl", "--silent", "--show-error", "--fail", "--location", "--output", artFilePath, targetFile]
+        command: ["bash", Quickshell.shellPath("scripts/media/download-cover.sh"), targetFile, artFilePath]
         onExited: (exitCode) => { root.downloaded = exitCode === 0 }
     }
 

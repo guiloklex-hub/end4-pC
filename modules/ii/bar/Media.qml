@@ -69,9 +69,8 @@ Item {
         id: artDownloader
         property string targetFile:  root.artUrl
         property string artFilePath: root.artFilePath
-        command: ["bash", "-c",
-            `[ -f ${artFilePath} ] || curl -sSL '${targetFile}' -o '${artFilePath}'`]
-        onExited: { root.artDownloaded = true }
+        command: ["bash", Quickshell.shellPath("scripts/media/download-cover.sh"), targetFile, artFilePath]
+        onExited: (exitCode) => { root.artDownloaded = exitCode === 0 }
     }
 
     Layout.fillHeight: true
