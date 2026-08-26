@@ -16,63 +16,72 @@ if [ ! -d "$STATE_DIR"/user/generated ]; then
 fi
 cd "$CONFIG_DIR" || exit
 
-colornames=''
-colorstrings=''
-colorlist=()
-colorvalues=()
-
-colornames=$(cat $STATE_DIR/user/generated/material_colors.scss | cut -d: -f1)
-colorstrings=$(cat $STATE_DIR/user/generated/material_colors.scss | cut -d: -f2 | cut -d ' ' -f2 | cut -d ";" -f1)
-IFS=$'\n'
-colorlist=($colornames)     # Array of color names
-colorvalues=($colorstrings) # Array of color values
-
-apply_kitty() {  
-  # Check if terminal escape sequence template exists
-  if [ ! -f "$SCRIPT_DIR/terminal/kitty-theme.conf" ]; then
-    echo "Template file not found for Kitty theme. Skipping that."
+apply_terminal_templates() {
+  if [ ! -f "$STATE_DIR/user/generated/material_colors.scss" ]; then
     return
   fi
-  # Copy template
-  mkdir -p "$STATE_DIR"/user/generated/terminal
-  cp "$SCRIPT_DIR/terminal/kitty-theme.conf" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
-  # Apply colors
-  for i in "${!colorlist[@]}"; do
-    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
-  done
+  mkdir -p "$STATE_DIR/user/generated/terminal"
 
-  # Reload
-  kill -SIGUSR1 $(pidof kitty)
+  python3 -c "
+import sys, os
+
+scss_file = '$STATE_DIR/user/generated/material_colors.scss'
+kitty_template = '$SCRIPT_DIR/terminal/kitty-theme.conf'
+kitty_target = '$STATE_DIR/user/generated/terminal/kitty-theme.conf'
+seq_template = '$SCRIPT_DIR/terminal/sequences.txt'
+seq_target = '$STATE_DIR/user/generated/terminal/sequences.txt'
+
+colors = {}
+if os.path.exists(scss_file):
+    with open(scss_file, 'r') as f:
+        for line in f:
+            if ':' in line:
+                k, v = line.split(':', 1)
+                k = k.strip().lstrip('$')
+                v = v.strip().rstrip(';').lstrip('#')
+                if v and len(v) == 6:
+                    colors[k] = v
+
+if not colors:
+    sys.exit(0)
+
+# Replace in Kitty theme
+if os.path.exists(kitty_template):
+    with open(kitty_template, 'r') as f:
+        text = f.read()
+    for k in sorted(colors.keys(), key=len, reverse=True):
+        v = colors[k]
+        text = text.replace(f'#\${k} #', f'#{v}')
+        text = text.replace(f'#\${k}', f'#{v}')
+    with open(kitty_target, 'w') as f:
+        f.write(text)
+
+# Replace in sequences
+if os.path.exists(seq_template):
+    with open(seq_template, 'r') as f:
+        text = f.read()
+    for k in sorted(colors.keys(), key=len, reverse=True):
+        v = colors[k]
+        text = text.replace(f'\${k} #', f'{v}')
+        text = text.replace(f'\${k}', f'{v}')
+    text = text.replace('\$alpha', '$term_alpha')
+    with open(seq_target, 'w') as f:
+        f.write(text)
+"
+}
+
+apply_kitty() {  
+  apply_terminal_templates
+  # Reload kitty safely
+  killall -SIGUSR1 kitty 2>/dev/null || true
 }
 
 apply_anyterm() {
-  # Check if terminal escape sequence template exists
-  if [ ! -f "$SCRIPT_DIR/terminal/sequences.txt" ]; then
-    echo "Template file not found for Terminal. Skipping that."
-    return
-  fi
-  # Copy template
-  mkdir -p "$STATE_DIR"/user/generated/terminal
-  cp "$SCRIPT_DIR/terminal/sequences.txt" "$STATE_DIR"/user/generated/terminal/sequences.txt
-  # Apply colors
-  for i in "${!colorlist[@]}"; do
-    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/sequences.txt
-  done
-
-  sed -i "s/\$alpha/$term_alpha/g" "$STATE_DIR/user/generated/terminal/sequences.txt"
-
-  for file in /dev/pts/*; do
-    if [[ $file =~ ^/dev/pts/[0-9]+$ ]]; then
-      {
-      cat "$STATE_DIR"/user/generated/terminal/sequences.txt >"$file"
-      } & disown || true
-    fi
-  done
+  apply_terminal_templates
 }
 
 apply_term() {
   apply_kitty
-  apply_anyterm
 }
 
 apply_qt() {

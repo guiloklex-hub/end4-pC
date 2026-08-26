@@ -20,8 +20,8 @@ GroupButton {
     leftRadius: (toggled || leftmost) ? (height / 2) : Appearance.rounding.unsharpenmore
     rightRadius: (toggled || rightmost) ? (height / 2) : Appearance.rounding.unsharpenmore
 
-    horizontalPadding: 12
-    verticalPadding: 8 
+    horizontalPadding: 8
+    verticalPadding: 6 
 
     colBackground: Appearance.colors.colSecondaryContainer
     colBackgroundHover: Appearance.colors.colSecondaryContainerHover
@@ -40,7 +40,7 @@ GroupButton {
                     id: materialSymbol
                     anchors.centerIn: parent
                     text: root.buttonIcon
-                    iconSize: Appearance.font.pixelSize.larger
+                    iconSize: Appearance.font.pixelSize.normal
                     color: root.colText
 
                     Behavior on color { ColorAnimation { duration: 180 } }
@@ -61,7 +61,7 @@ GroupButton {
                 anchors.centerIn: parent
                 color: root.colText
                 text: root.buttonText
-
+                font.pixelSize: Appearance.font.pixelSize.smaller
                 Behavior on color { ColorAnimation { duration: 180 } }
             }
         }

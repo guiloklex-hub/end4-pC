@@ -13,8 +13,8 @@ import qs.modules.common.models
 ContentPage {
     id: page
     property bool isMinimal: Config.options.settings.style === "minimal"
-    forceWidth: true
-    baseWidth: !isMinimal ? 720 : 600
+    forceWidth: false
+    baseWidth: !isMinimal ? 920 : 760
     bottomContentPadding: 35
 
     function goTo(term) {
@@ -132,11 +132,11 @@ ContentPage {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 2
+                        Layout.preferredHeight: 64
+                        spacing: 4
                         uniformCellSizes: true
-                        SmallLightDarkPreferenceButton { dark: false }
-                        SmallLightDarkPreferenceButton { dark: true }
+                        SmallLightDarkPreferenceButton { dark: false; implicitHeight: 64 }
+                        SmallLightDarkPreferenceButton { dark: true; implicitHeight: 64 }
                     }
                     GridLayout {
                         Layout.fillWidth: true

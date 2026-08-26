@@ -71,10 +71,17 @@ Item {
             required property int index
 
             property string appId:     root._workOrder[index] ?? ""
-            property var    appEntry:  TaskbarApps.apps.find(a => a.appId === appId) ?? null
-            property var    deskEntry: appEntry ? DesktopEntries.heuristicLookup(appId) : null
+            property var    appEntry:  TaskbarApps.apps.find(a => a.appId.toLowerCase() === appId.toLowerCase()) ?? null
+            property var    deskEntry: DesktopEntries.heuristicLookup(appId)
             property bool   appActive: appEntry?.toplevels?.find(t => t.activated) !== undefined
             property int    _lastFocused: -1
+
+            Connections {
+                target: DesktopEntries
+                function onApplicationsChanged() {
+                    slotItem.deskEntry = DesktopEntries.heuristicLookup(slotItem.appId)
+                }
+            }
 
             width:  root.btnSize
             height: root.implicitHeight
@@ -156,7 +163,8 @@ Item {
                 onClicked: {
                     const entry = slotItem.appEntry
                     if (!entry || entry.toplevels.length === 0) {
-                        slotItem.deskEntry?.execute()
+                        const de = slotItem.deskEntry ?? DesktopEntries.heuristicLookup(slotItem.appId)
+                        de?.execute()
                         return
                     }
                     const next = (slotItem._lastFocused + 1) % entry.toplevels.length
@@ -164,7 +172,10 @@ Item {
                     entry.toplevels[next].activate()
                 }
 
-                middleClickAction: () => { slotItem.deskEntry?.execute() }
+                middleClickAction: () => {
+                    const de = slotItem.deskEntry ?? DesktopEntries.heuristicLookup(slotItem.appId)
+                    de?.execute()
+                }
                 altAction:         () => { TaskbarApps.togglePin(slotItem.appId) }
 
                 contentItem: Item {

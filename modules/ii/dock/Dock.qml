@@ -56,7 +56,9 @@ Scope {
 
             MouseArea {
                 id: dockMouseArea
+                width: implicitWidth
                 height: parent.height
+                acceptedButtons: Qt.NoButton
                 anchors {
                     top: parent.top
                     topMargin: dockRoot.reveal
@@ -80,6 +82,7 @@ Scope {
 
                     Item {
                         id: dockBackground
+                        width: implicitWidth
                         anchors {
                             top: parent.top
                             bottom: parent.bottom
