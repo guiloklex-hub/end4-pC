@@ -34,7 +34,7 @@ AbstractBackgroundWidget {
         }
         return MprisController.activePlayer
     }
-    property var artUrl: currentPlayer?.trackArtUrl
+    property string artUrl: currentPlayer?.trackArtUrl ?? ""
     property string artDownloadLocation: Directories.coverArt
     property string artFileName: Qt.md5(artUrl)
     property string artFilePath: `${artDownloadLocation}/${artFileName}`
@@ -123,8 +123,8 @@ AbstractBackgroundWidget {
         id: coverArtDownloader
         property string targetFile: root.artUrl
         property string artFilePath: root.artFilePath
-        command: ["bash", "-c", `[ -f ${artFilePath} ] || curl -sSL '${targetFile}' -o '${artFilePath}'`]
-        onExited: { root.downloaded = true }
+        command: ["curl", "--silent", "--show-error", "--fail", "--location", "--output", artFilePath, targetFile]
+        onExited: (exitCode) => { root.downloaded = exitCode === 0 }
     }
 
     StyledRectangularShadow {

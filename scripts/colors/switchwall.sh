@@ -20,6 +20,11 @@ handle_kde_material_you_colors() {
         fi
     fi
 
+    local kde_wrapper="$XDG_CONFIG_HOME/matugen/templates/kde/kde-material-you-colors-wrapper.sh"
+    if [ ! -x "$kde_wrapper" ]; then
+        return
+    fi
+
     local kde_scheme_variant=""
     case "$type_flag" in
         scheme-content|scheme-expressive|scheme-fidelity|scheme-fruit-salad|scheme-monochrome|scheme-neutral|scheme-rainbow|scheme-tonal-spot)
@@ -29,7 +34,7 @@ handle_kde_material_you_colors() {
             kde_scheme_variant="scheme-tonal-spot"
             ;;
     esac
-    "$XDG_CONFIG_HOME"/matugen/templates/kde/kde-material-you-colors-wrapper.sh --scheme-variant "$kde_scheme_variant"
+    "$kde_wrapper" --scheme-variant "$kde_scheme_variant"
 }
 
 pre_process() {

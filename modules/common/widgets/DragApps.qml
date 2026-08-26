@@ -164,7 +164,7 @@ Item {
                     const entry = slotItem.appEntry
                     if (!entry || entry.toplevels.length === 0) {
                         const de = slotItem.deskEntry ?? DesktopEntries.heuristicLookup(slotItem.appId)
-                        de?.execute()
+                        Applications.launchDesktopEntry(de)
                         return
                     }
                     const next = (slotItem._lastFocused + 1) % entry.toplevels.length
@@ -174,7 +174,7 @@ Item {
 
                 middleClickAction: () => {
                     const de = slotItem.deskEntry ?? DesktopEntries.heuristicLookup(slotItem.appId)
-                    de?.execute()
+                    Applications.launchDesktopEntry(de)
                 }
                 altAction:         () => { TaskbarApps.togglePin(slotItem.appId) }
 
@@ -387,7 +387,8 @@ Item {
 
                     Repeater {
                         model: ScriptModel {
-                            values: WM.compositor === "hyprland" ? (previewPopup.appTopLevel?.toplevels ?? []) : []
+                            values: previewPopup.show && WM.compositor === "hyprland"
+                                ? (previewPopup.appTopLevel?.toplevels ?? []) : []
                         }
 
                         RippleButton {
@@ -443,7 +444,7 @@ Item {
                                         id: screencopyView
                                         anchors.centerIn: parent
                                         captureSource: windowButton.modelData
-                                        live: true
+                                        live: previewPopup.show
                                         paintCursor: true
                                         constraintSize: Qt.size(
                                             root.maxWindowPreviewWidth,

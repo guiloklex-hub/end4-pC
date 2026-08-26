@@ -65,7 +65,7 @@ DockButton {
     onClicked: {
         if (appToplevel.toplevels.length === 0) {
             const de = root.desktopEntry ?? DesktopEntries.heuristicLookup(appToplevel.appId);
-            de?.execute();
+            Applications.launchDesktopEntry(de);
             return;
         }
         lastFocused = (lastFocused + 1) % appToplevel.toplevels.length
@@ -74,7 +74,7 @@ DockButton {
 
     middleClickAction: () => {
         const de = root.desktopEntry ?? DesktopEntries.heuristicLookup(appToplevel.appId);
-        de?.execute();
+        Applications.launchDesktopEntry(de);
     }
 
     altAction: () => {

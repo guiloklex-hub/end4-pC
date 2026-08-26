@@ -55,7 +55,7 @@ Singleton {
 
     onMonitorsChanged: {
         ddcMonitors = [];
-        ddcProc.running = true;
+        ddcAvailabilityCheck.running = true;
     }
 
     function initializeMonitor(i: int): void {
@@ -66,6 +66,15 @@ Singleton {
 
     function ddcDetectFinished(): void {
         initializeMonitor(0);
+    }
+
+    Process {
+        id: ddcAvailabilityCheck
+        command: ["sh", "-c", "command -v ddcutil >/dev/null 2>&1"]
+        onExited: (exitCode) => {
+            if (exitCode === 0) ddcProc.running = true;
+            else root.ddcDetectFinished();
+        }
     }
 
     Process {

@@ -15,10 +15,10 @@ ContentPage {
     property bool isMinimal: Config.options.settings.style === "minimal"
 
     function runSystemUpdate() {
-        Quickshell.execDetached([
+        Applications.launchCommand([
             "kitty", "--hold",
             "fish", "-i", "-l", "-c",
-            "yay -Syu --combinedupgrade=false"
+            "paru -Syu"
         ])
         Qt.callLater(() => GlobalStates.settingsOpen = false)
     }
@@ -26,29 +26,16 @@ ContentPage {
     function runUpdateDots() {
         const updateScript = `
             set -e
-            DIR="$HOME/.config/quickshell"
-
-            # Download to temp first
-            rm -rf "$DIR/end4-pC-tmp"
-            git clone https://github.com/pctrade/end4-pC.git "$DIR/end4-pC-tmp"
-
-            # Apply update
-            rm -rf "$DIR/end4-pC-old"
-            [ -d "$DIR/end4-pC" ] && mv "$DIR/end4-pC" "$DIR/end4-pC-old"
-            mv "$DIR/end4-pC-tmp" "$DIR/end4-pC"
-
-            # Reload
-            killall quickshell 2>/dev/null || true
-            killall qs 2>/dev/null || true
-            sleep 1
-            setsid quickshell -c end4-pC >/tmp/qs.log 2>&1 < /dev/null &
-            disown
-
-            # Cleanup
-            rm -rf "$DIR/end4-pC-old"
+            cd "$HOME/.config/quickshell/end4-pC"
+            if [ -n "$(git status --porcelain)" ]; then
+                echo "Update refused: preserve or commit local changes first."
+                exit 1
+            fi
+            git pull --ff-only
+            systemctl --user restart end4-quickshell.service
         `
 
-        Quickshell.execDetached(["kitty", "--hold", "bash", "-c", updateScript])
+        Applications.launchCommand(["kitty", "--hold", "bash", "-lc", updateScript])
         Qt.callLater(() => GlobalStates.settingsOpen = false)
     }
 
@@ -135,9 +122,7 @@ ContentPage {
                 }
             }
             RowLayout {
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                anchors.margins: 0
+                Layout.alignment: Qt.AlignRight | Qt.AlignBottom
                 spacing: 8
                 RippleButton {
                     buttonText: Translation.tr("Update Dots")

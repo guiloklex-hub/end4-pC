@@ -10,7 +10,7 @@ Singleton {
 
     property string distroName: "Unknown"
     property string distroId: "unknown"
-    property string distroIcon: ""
+    property string distroIcon: "application-x-executable"
     property string username: "user"
     property string hostname: ""
     property string homeUrl: ""
@@ -75,13 +75,13 @@ Singleton {
             const privacyPolicyUrlMatch = textOsRelease.match(/^PRIVACY_POLICY_URL="(.+?)"/m)
             privacyPolicyUrl = privacyPolicyUrlMatch ? privacyPolicyUrlMatch[1] : ""
             const logoFieldMatch = textOsRelease.match(/^LOGO="?(.+?)"?$/m)
-            logo = logoFieldMatch ? logoFieldMatch[1] : ""
+            const osLogo = logoFieldMatch ? logoFieldMatch[1] : ""
 
             switch (distroId) {
                 case "artix":
-                case "arch":        distroIcon = "arch-symbolic"; break
+                case "arch":        distroIcon = "application-x-executable"; break
                 case "endeavouros": distroIcon = "endeavouros-symbolic"; break
-                case "cachyos":     distroIcon = "cachyos-symbolic"; break
+                case "cachyos":     distroIcon = "cachyos-pi"; break
                 case "nixos":       distroIcon = "nixos-symbolic"; break
                 case "fedora":      distroIcon = "fedora-symbolic"; break
                 case "linuxmint":
@@ -93,13 +93,15 @@ Singleton {
                 case "kali":        distroIcon = "debian-symbolic"; break
                 case "funtoo":
                 case "gentoo":      distroIcon = "gentoo-symbolic"; break
-                default:            distroIcon = "arch-symbolic"; break
+                default:            distroIcon = "application-x-executable"; break
             }
             if (textOsRelease.toLowerCase().includes("nyarch"))
                 distroIcon = "nyarch-symbolic"
 
-            if (logo.trim().length === 0)
-                logo = distroIcon
+            if (distroId === "cachyos")
+                logo = "cachyos-pi"
+            else
+                logo = osLogo.trim().length > 0 ? osLogo : distroIcon
         }
     }
 

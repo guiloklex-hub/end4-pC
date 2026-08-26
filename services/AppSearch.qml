@@ -40,13 +40,16 @@ Singleton {
         }
     ]
 
-    // Deduped list to fix double icons
-    readonly property list<DesktopEntry> list: Array.from(DesktopEntries.applications.values)
-        .filter((app, index, self) => 
-            index === self.findIndex((t) => (
-                t.id === app.id
-            ))
-    )
+    // Deduplicate in linear time. The previous findIndex based expression was
+    // quadratic and was reevaluated whenever the desktop-entry model changed.
+    readonly property list<DesktopEntry> list: {
+        const seen = new Set()
+        return Array.from(DesktopEntries.applications.values).filter(app => {
+            if (seen.has(app.id)) return false
+            seen.add(app.id)
+            return true
+        })
+    }
     
     readonly property var preppedNames: list.map(a => ({
         name: Fuzzy.prepare(`${a.name} `),

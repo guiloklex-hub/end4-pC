@@ -135,9 +135,9 @@ Item {
                             Image {
                                 id: avatarImage
                                 anchors.fill: parent
-                                source: Config.options.profile.avatarPath !== "" 
+                                source: Config.options.profile.avatarPicture !== ""
                                     ? "file://" + Config.options.profile.avatarPicture 
-                                    : "file:///home/" + (Quickshell.env("USER") ?? "user") + "/.face"
+                                    : "file:///usr/share/icons/Adwaita/scalable/status/avatar-default.svg"
                                 sourceSize.width: avatarImage.width * 2
                                 sourceSize.height: avatarImage.height * 2
                                 fillMode: Image.PreserveAspectCrop
@@ -193,10 +193,9 @@ Item {
                             }
                         }
 
-                        MouseArea {
-                            anchors.fill: parent
+                        TapHandler {
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.showingProfile = !root.showingProfile
+                            onTapped: root.showingProfile = !root.showingProfile
                         }
                     }
 

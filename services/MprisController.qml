@@ -41,6 +41,37 @@ Singleton {
             !(player.dbusName?.endsWith('.mpd') && !player.dbusName.endsWith('MediaPlayer2.mpd')));
     }
 
+    function filterDuplicatePlayers(players) {
+        const filtered = [];
+        const used = new Set();
+
+        for (let i = 0; i < players.length; ++i) {
+            if (used.has(i)) continue;
+
+            const p1 = players[i];
+            const group = [i];
+            for (let j = i + 1; j < players.length; ++j) {
+                const p2 = players[j];
+                const title1 = p1.trackTitle ?? "";
+                const title2 = p2.trackTitle ?? "";
+                const titlesMatch = title1.length > 0 && title2.length > 0
+                    && (title1.includes(title2) || title2.includes(title1));
+                const timingsMatch = p1.length > 0 && p2.length > 0
+                    && Math.abs(p1.position - p2.position) <= 2
+                    && Math.abs(p1.length - p2.length) <= 2;
+
+                if (titlesMatch || timingsMatch) group.push(j);
+            }
+
+            const withArtwork = group.find(idx => (players[idx].trackArtUrl ?? "").length > 0);
+            const chosenIdx = withArtwork === undefined ? group[0] : withArtwork;
+            filtered.push(players[chosenIdx]);
+            group.forEach(idx => used.add(idx));
+        }
+
+        return filtered;
+    }
+
 	// Original stuff from fox below
 	Instantiator {
 		model: Mpris.players;

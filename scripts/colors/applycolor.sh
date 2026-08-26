@@ -23,9 +23,10 @@ apply_terminal_templates() {
   mkdir -p "$STATE_DIR/user/generated/terminal"
 
   python3 -c "
-import sys, os
+import sys, os, json
 
 scss_file = '$STATE_DIR/user/generated/material_colors.scss'
+json_file = '$STATE_DIR/user/generated/colors.json'
 kitty_template = '$SCRIPT_DIR/terminal/kitty-theme.conf'
 kitty_target = '$STATE_DIR/user/generated/terminal/kitty-theme.conf'
 seq_template = '$SCRIPT_DIR/terminal/sequences.txt'
@@ -44,6 +45,12 @@ if os.path.exists(scss_file):
 
 if not colors:
     sys.exit(0)
+
+# QuickShell consumes the same palette as JSON. Keeping this generated from
+# the SCSS output avoids a hard dependency on a separate Matugen template.
+with open(json_file, 'w') as f:
+    json.dump(colors, f, indent=2)
+    f.write('\n')
 
 # Replace in Kitty theme
 if os.path.exists(kitty_template):
@@ -70,7 +77,7 @@ if os.path.exists(seq_template):
 "
 }
 
-apply_kitty() {  
+apply_kitty() {
   apply_terminal_templates
   # Reload kitty safely
   killall -SIGUSR1 kitty 2>/dev/null || true
