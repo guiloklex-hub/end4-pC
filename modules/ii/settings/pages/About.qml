@@ -31,7 +31,8 @@ ContentPage {
                 echo "Update refused: preserve or commit local changes first."
                 exit 1
             fi
-            git pull --ff-only
+            git fetch origin main
+            git rebase origin/main
             systemctl --user restart end4-quickshell.service
         `
 
