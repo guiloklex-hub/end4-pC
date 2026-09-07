@@ -22,8 +22,11 @@ Singleton {
 
         let desktopId = entry.id ?? ""
         if (desktopId.length > 0) {
-            if (!desktopId.endsWith(".desktop")) desktopId += ".desktop"
-            Quickshell.execDetached(["uwsm-app", "--", desktopId])
+            // Quickshell DesktopEntry.id strips the trailing '.desktop' extension.
+            // Applications like Telegram Desktop have an app ID ending in '.desktop' (org.telegram.desktop),
+            // whose file on disk is 'org.telegram.desktop.desktop'.
+            const targetId = desktopId.endsWith(".desktop.desktop") ? desktopId : (desktopId + ".desktop")
+            Quickshell.execDetached(["uwsm-app", "--", targetId])
             return true
         }
 
