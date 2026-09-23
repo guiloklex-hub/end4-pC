@@ -110,6 +110,10 @@ Singleton {
         }
 
         url += `&units=${units}`
+        // Descrição do tempo no idioma da interface (OpenWeatherMap usa "pt_br", "zh_cn"; demais: 2 letras)
+        const uiLang = (Config.options?.language?.ui ?? "").toLowerCase()
+        if (uiLang && uiLang !== "auto")
+            url += `&lang=${["pt_br", "zh_cn", "zh_tw"].includes(uiLang) ? uiLang : uiLang.slice(0, 2)}`
         url += `&appid=${apiKey}`
 
         let command = `curl -s "${url}"`

@@ -82,9 +82,12 @@ StyledPopup {
                 iconText: "heart_check"
                 iconShape: MaterialShape.Shape.Clover4Leaf
                 value: Battery.health / 100
+                // Sem contagem de ciclos (comum em notebooks Dell), mostra capacidade atual / original
                 sublabel: Battery.chargeCycles > 0
                     ? `${Battery.chargeCycles} ${Translation.tr("cycles")}`
-                    : Translation.tr("N/A")
+                    : (Battery.energyCapacity > 0 && Battery.health > 0)
+                        ? `${Battery.energyCapacity.toFixed(1)} / ${Math.round(Battery.energyCapacity / (Battery.health / 100))} Wh`
+                        : Translation.tr("N/A")
                 sublabelColor: Appearance.colors.colOnSurfaceVariant
                 cardWidth: 160
             }

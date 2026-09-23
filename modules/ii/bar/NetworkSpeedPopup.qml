@@ -113,8 +113,8 @@ StyledPopup {
             StyledText {
                 text: `${root.formatTotal(card.total)} ${Translation.tr("this session")}`
                 color: Appearance.colors.colOnSurfaceVariant
-                opacity: 0.6
-                font.pixelSize: Appearance.font.pixelSize.smallest
+                opacity: 0.85
+                font.pixelSize: Appearance.font.pixelSize.smaller
             }
         }
     }

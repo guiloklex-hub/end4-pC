@@ -28,6 +28,7 @@ Singleton {
     property bool isFullAndCharging: isFull && isCharging
 
     property real energyRate: UPower.displayDevice.changeRate
+    property real energyCapacity: UPower.displayDevice.energyCapacity // Wh atuais quando cheia
     property real timeToEmpty: UPower.displayDevice.timeToEmpty
     property real timeToFull: UPower.displayDevice.timeToFull
 

@@ -31,7 +31,10 @@ Scope {
             property var monitor: WM.monitorFor(modelData)
             property bool fullscreenOnThisMonitor: WM.fullscreenOnMonitor(monitor?.name)
 
-            readonly property real barHeight: 38
+            // Tamanho vem de dock.height no config.json; ícones e botões escalam junto
+            readonly property real barHeight: Math.max(38, Config.options?.dock.height ?? 52)
+            readonly property real btnSize: barHeight - 8
+            readonly property real iconSize: Math.round(btnSize * 0.77)
 
             anchors {
                 bottom: true
@@ -68,13 +71,13 @@ Scope {
             RowLayout {
                 id: centerRow
                 anchors.centerIn: parent
-                spacing: 6
+                spacing: 8
 
                 // Menu / Start button
                 RippleButton {
                     id: menuBtn
-                    implicitWidth: 32
-                    implicitHeight: 30
+                    implicitWidth: dockRoot.btnSize
+                    implicitHeight: dockRoot.btnSize
                     Layout.alignment: Qt.AlignVCenter
                     buttonRadius: Appearance.rounding.small
                     hoverEnabled: true
@@ -92,7 +95,7 @@ Scope {
                         anchors.fill: parent
                         MaterialSymbol {
                             anchors.centerIn: parent
-                            iconSize: 20
+                            iconSize: Math.round(dockRoot.iconSize * 0.8)
                             text: "apps"
                             color: menuBtn.hovered || menuBtn.toggled ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
                         }
@@ -101,10 +104,11 @@ Scope {
 
                 // Subtle vertical divider
                 Rectangle {
-                    implicitWidth: 1
-                    implicitHeight: 18
-                    color: Appearance.colors.colOutlineVariant
-                    opacity: 0.35
+                    implicitWidth: 2
+                    implicitHeight: Math.round(dockRoot.btnSize * 0.55)
+                    radius: 1
+                    color: Appearance.colors.colOutline
+                    opacity: 0.6
                     Layout.alignment: Qt.AlignVCenter
                 }
 
@@ -112,6 +116,12 @@ Scope {
                 DocktoPanel {
                     id: dockApps
                     Layout.alignment: Qt.AlignVCenter
+                    vertical: false
+                    screen: dockRoot.screen
+                    iconSize: dockRoot.iconSize
+                    btnSize: dockRoot.btnSize
+                    btnSpacing: 6
+                    popupEdge: Edges.Top
                 }
             }
         }

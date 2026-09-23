@@ -31,6 +31,9 @@ AbstractBackgroundWidget {
         property int shape: MaterialShape.Shape.Cookie12Sided
         property color bgColor: Appearance.colors.colPrimaryContainer
         property color shapeColor: Appearance.colors.colPrimary
+        // Texto/ícone pareados com o fundo (on*): containers claros exigem texto escuro
+        property color fgColor: Appearance.colors.colOnPrimaryContainer
+        property color symbolColor: Appearance.colors.colOnPrimary
         property var onToggle: () => {}
         property var onReset: () => {}
         default property alias extraContent: extraSlot.data
@@ -68,7 +71,7 @@ AbstractBackgroundWidget {
                 MaterialShapeWrappedMaterialSymbol {
                     shape: timerCard.shape
                     color: timerCard.shapeColor
-                    colSymbol: Appearance.colors.colOnPrimary
+                    colSymbol: timerCard.symbolColor
                     text: timerCard.running ? "pause" : timerCard.icon
                     iconSize: 18
                     fill: 1
@@ -95,14 +98,14 @@ AbstractBackgroundWidget {
                     font.pixelSize: Appearance.font.pixelSize.large
                     font.weight: Font.Bold
                     font.features: { "tnum": 1 }
-                    color: Appearance.colors.colOnPrimaryContainer
+                    color: timerCard.fgColor
                 }
 
                 StyledText {
                     text: timerCard.label
                     font.pixelSize: Appearance.font.pixelSize.small
-                    color: Appearance.colors.colOnPrimaryContainer
-                    opacity: 0.6
+                    color: timerCard.fgColor
+                    opacity: 0.75
                 }
             }
 
@@ -129,10 +132,12 @@ AbstractBackgroundWidget {
         TimerCard {
             icon: TimerService.pomodoroBreak ? "coffee" : "visibility"
             value: TimerService.formatSeconds(TimerService.pomodoroSecondsLeft)
-            label: TimerService.pomodoroBreak ? "Break" : "Focus"
+            label: TimerService.pomodoroBreak ? Translation.tr("Break") : Translation.tr("Focus")
             running: TimerService.pomodoroRunning
             bgColor: Appearance.colors.colTertiaryContainer
             shapeColor: Appearance.colors.colTertiary
+            fgColor: Appearance.colors.colOnTertiaryContainer
+            symbolColor: Appearance.colors.colOnTertiary
             shape: MaterialShape.Shape.Flower
             onToggle: () => TimerService.togglePomodoro()
             onReset: () => TimerService.resetPomodoro()
@@ -142,11 +147,13 @@ AbstractBackgroundWidget {
         TimerCard {
             icon: "timer"
             value: TimerService.formatSeconds(TimerService.stopwatchTime / 100)
-            label: "Stopwatch"
+            label: Translation.tr("Stopwatch")
             running: TimerService.stopwatchRunning
             shape: MaterialShape.Shape.Sunny
             bgColor: Appearance.colors.colSecondaryContainer
             shapeColor: Appearance.colors.colSecondary
+            fgColor: Appearance.colors.colOnSecondaryContainer
+            symbolColor: Appearance.colors.colOnSecondary
             onToggle: () => TimerService.toggleStopwatch()
             onReset: () => TimerService.stopwatchReset()
         }
@@ -155,7 +162,7 @@ AbstractBackgroundWidget {
         TimerCard {
             icon: "hourglass_top"
             value: TimerService.formatSeconds(TimerService.countdownSecondsLeft)
-            label: "Countdown"
+            label: Translation.tr("Countdown")
             running: TimerService.countdownRunning
             shape: MaterialShape.Shape.Bun
             onToggle: () => TimerService.toggleCountdown()
@@ -172,12 +179,12 @@ AbstractBackgroundWidget {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         radius: Appearance.rounding.full
-                        color: ColorUtils.transparentize(Appearance.colors.colOnTertiaryContainer, 0.85)
+                        color: ColorUtils.transparentize(Appearance.colors.colOnPrimaryContainer, 0.85)
 
                         StyledText {
                             anchors.centerIn: parent
                             text: "+" + modelData + "m"
-                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.pixelSize: Appearance.font.pixelSize.smaller
                             font.weight: Font.DemiBold
                             color: Appearance.colors.colOnPrimaryContainer
                         }

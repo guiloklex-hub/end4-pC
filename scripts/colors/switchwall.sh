@@ -489,7 +489,16 @@ main() {
         else
             cd "$(xdg-user-dir PICTURES)/Wallpapers/showcase" 2>/dev/null || cd "$(xdg-user-dir PICTURES)/Wallpapers" 2>/dev/null || cd "$(xdg-user-dir PICTURES)" || return 1
         fi
-        imgpath="$(kdialog --getopenfilename . --title 'Choose wallpaper')"
+        # kdialog pode não estar instalado (ex.: sessão sem KDE); cai para zenity
+        if command -v kdialog &>/dev/null; then
+            imgpath="$(kdialog --getopenfilename . --title 'Choose wallpaper')"
+        elif command -v zenity &>/dev/null; then
+            imgpath="$(zenity --file-selection --title='Escolher papel de parede' --filename="$PWD/" \
+                --file-filter='Imagens e vídeos | *.jpg *.jpeg *.png *.webp *.avif *.bmp *.mp4 *.webm *.mkv *.mov *.avi' \
+                --file-filter='Todos os arquivos | *' 2>/dev/null)"
+        else
+            notify-send "Papel de parede" "Nenhum seletor de arquivos encontrado (instale kdialog ou zenity)" -a Shell
+        fi
     fi
 
     if [[ -n "$imgpath" && -z "$noswitch_flag" ]]; then

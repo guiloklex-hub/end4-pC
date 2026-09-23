@@ -18,8 +18,14 @@ AbstractWidget {
     property bool visibleWhenLocked: Config.options.lock.showWidgets
     property var configEntry: Config.options.background.widgets[configEntryName]
     property string placementStrategy: configEntry.placementStrategy
-    property real targetX: Math.max(0, Math.min(configEntry.x, scaledScreenWidth - width))
-    property real targetY : Math.max(0, Math.min(configEntry.y, scaledScreenHeight - height))
+    // Mantém margem da borda direita e não deixa o widget atrás do dock. Assim, coordenadas
+    // pensadas para o 4K (coluna encostada à direita) caem no lugar certo também no notebook.
+    readonly property real edgeMargin: 24
+    readonly property real bottomReserve: edgeMargin + (Config.options.dock.enable ? (Config.options.dock.height ?? 0) : 0)
+    function clampX(value) { return Math.max(0, Math.min(value, scaledScreenWidth - width - edgeMargin)) }
+    function clampY(value) { return Math.max(0, Math.min(value, scaledScreenHeight - height - bottomReserve)) }
+    property real targetX: clampX(configEntry.x)
+    property real targetY: clampY(configEntry.y)
     x: targetX
     y: targetY
     visible: opacity > 0
@@ -41,8 +47,8 @@ AbstractWidget {
     onReleased: {
         configEntry.x = root.x;
         configEntry.y = root.y;
-        root.targetX = Qt.binding(() => Math.max(0, Math.min(configEntry.x, scaledScreenWidth - width)));
-        root.targetY = Qt.binding(() => Math.max(0, Math.min(configEntry.y, scaledScreenHeight - height)));
+        root.targetX = Qt.binding(() => root.clampX(configEntry.x));
+        root.targetY = Qt.binding(() => root.clampY(configEntry.y));
         root.restoreXYBinding();
     }
 

@@ -96,10 +96,27 @@ Scope {
             property real submenuAnchorY: 0
             property real submenuWidth: 284
 
+            // Área útil: menu e submenus não sobrepõem a barra nem o dock
+            readonly property bool barHorizontal: !Config.options.bar.vertical
+            readonly property real reservedTop: barHorizontal && !Config.options.bar.bottom ? Appearance.sizes.barHeight : 0
+            readonly property real reservedBottom: (barHorizontal && Config.options.bar.bottom ? Appearance.sizes.barHeight : 0)
+                + (Config.options.dock.enable ? (Config.options.dock.height ?? 0) : 0)
+            readonly property real safeTop: reservedTop + 8
+            readonly property real safeBottom: height - reservedBottom - 8
+
+            function openSubmenu(component, row) {
+                submenuCloseTimer.stop()
+                submenuAnchorY = menuCard.y + row.mapToItem(menuCard, 0, 0).y
+                openSubmenuComponent = component
+            }
+
             Timer {
                 id: submenuCloseTimer
                 interval: 250
-                onTriggered: menuWindow.openSubmenuComponent = null
+                onTriggered: {
+                    if (wallpaperHover.hovered || widgetsHover.hovered || submenuHover.hovered) return
+                    menuWindow.openSubmenuComponent = null
+                }
             }
 
             MouseArea {
@@ -113,8 +130,18 @@ Scope {
                 id: menuCard
                 width: 348
                 implicitHeight: menuCol.implicitHeight + 16
-                x: Math.min(Math.max(GlobalStates.desktopMenuX - width / 2, 8), menuWindow.width - width - 8)
-                y: Math.min(Math.max(GlobalStates.desktopMenuY - implicitHeight / 2, 8), menuWindow.height - implicitHeight - 8)
+                x: {
+                    const cx = GlobalStates.desktopMenuX + 6
+                    const px = (cx + width + 8 <= menuWindow.width) ? cx : cx - width - 12
+                    return Math.min(Math.max(px, 8), menuWindow.width - width - 8)
+                }
+                y: {
+                    const cy = GlobalStates.desktopMenuY
+                    const h = implicitHeight
+                    if (cy + 6 + h <= menuWindow.safeBottom) return Math.max(cy + 6, menuWindow.safeTop)
+                    if (cy - 6 - h >= menuWindow.safeTop) return cy - 6 - h
+                    return Math.max(menuWindow.safeTop, menuWindow.safeBottom - h)
+                }
                 radius: Appearance.rounding.verylarge
                 color: "transparent"
 
@@ -177,7 +204,7 @@ Scope {
                                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
                                 spacing: 12
                                 MaterialSymbol { text: "format_paint"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: "Wallpaper & style"; font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
+                                StyledText { Layout.fillWidth: true; text: Translation.tr("Wallpaper & style"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
                                 MaterialSymbol { text: "chevron_right"; iconSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1; opacity: 0.4 }
                             }
                             Component {
@@ -185,17 +212,13 @@ Scope {
                                 WallpaperSubmenu {}
                             }
                             HoverHandler {
+                                id: wallpaperHover
                                 onHoveredChanged: {
-                                    if (hovered) {
-                                        submenuCloseTimer.stop()
-                                        menuWindow.submenuAnchorY = menuCard.y + wallpaperRow.mapToItem(menuCard, 0, 0).y
-                                        menuWindow.openSubmenuComponent = wallpaperSubmenu
-                                    } else {
-                                        submenuCloseTimer.restart()
-                                    }
+                                    if (hovered) menuWindow.openSubmenu(wallpaperSubmenu, wallpaperRow)
+                                    else submenuCloseTimer.restart()
                                 }
                             }
-                            onClicked: GlobalStates.desktopMenuOpen = false
+                            onClicked: menuWindow.openSubmenu(wallpaperSubmenu, wallpaperRow)
                         }
 
                         // Widgets
@@ -208,7 +231,7 @@ Scope {
                                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
                                 spacing: 12
                                 MaterialSymbol { text: "widgets"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: "Widgets"; font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
+                                StyledText { Layout.fillWidth: true; text: Translation.tr("Widgets"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
                                 MaterialSymbol { text: "chevron_right"; iconSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1; opacity: 0.4 }
                             }
 
@@ -218,16 +241,13 @@ Scope {
                             }
 
                             HoverHandler {
+                                id: widgetsHover
                                 onHoveredChanged: {
-                                    if (hovered) {
-                                        submenuCloseTimer.stop()
-                                        menuWindow.submenuAnchorY = menuCard.y + widgetsRow.mapToItem(menuCard, 0, 0).y
-                                        menuWindow.openSubmenuComponent = widgetsSubmenu
-                                    } else {
-                                        submenuCloseTimer.restart()
-                                    }
+                                    if (hovered) menuWindow.openSubmenu(widgetsSubmenu, widgetsRow)
+                                    else submenuCloseTimer.restart()
                                 }
                             }
+                            onClicked: menuWindow.openSubmenu(widgetsSubmenu, widgetsRow)
                         }
 
                         RippleButton {
@@ -238,20 +258,13 @@ Scope {
                                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
                                 spacing: 12
                                 MaterialSymbol { text: "stacks"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: "DropShelf"; font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
+                                StyledText { Layout.fillWidth: true; text: Translation.tr("DropShelf"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
                                 StyledText {
                                     visible: DropShelf.items.length > 0
                                     text: DropShelf.items.length
                                     font.pixelSize: Appearance.font.pixelSize.small
                                     color: Appearance.colors.colOnLayer1
                                     opacity: 0.6
-                                }
-                                MaterialSymbol {
-                                    visible: DropShelf.items.length === 0
-                                    text: "chevron_right"
-                                    iconSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnLayer1
-                                    opacity: 0.4
                                 }
                             }
                             onClicked: {
@@ -270,14 +283,7 @@ Scope {
                                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
                                 spacing: 12
                                 MaterialSymbol { text: "video_template"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: "Live Wallpaper"; font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
-                                MaterialSymbol {
-                                    visible: DropShelf.items.length === 0
-                                    text: "chevron_right"
-                                    iconSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnLayer1
-                                    opacity: 0.4
-                                }
+                                StyledText { Layout.fillWidth: true; text: Translation.tr("Live Wallpaper"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
                             }
                             onClicked: {
                                 GlobalStates.desktopMenuOpen = false
@@ -296,8 +302,7 @@ Scope {
                                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
                                 spacing: 12
                                 MaterialSymbol { text: "settings"; iconSize: Appearance.font.pixelSize.larger; color: Appearance.colors.colOnLayer1 }
-                                StyledText { Layout.fillWidth: true; text: "Settings"; font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
-                                MaterialSymbol { text: "chevron_right"; iconSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1; opacity: 0.4 }
+                                StyledText { Layout.fillWidth: true; text: Translation.tr("Settings"); font.pixelSize: Appearance.font.pixelSize.normal; color: Appearance.colors.colOnLayer1 }
                             }
                             onClicked: {
                                 GlobalStates.desktopMenuOpen = false
@@ -319,10 +324,10 @@ Scope {
                     ? menuCard.x - menuWindow.submenuWidth - 8
                     : menuCard.x + menuCard.width + 8
 
-                y: Math.min(
-                    Math.max(menuWindow.submenuAnchorY, 8),
-                    menuWindow.height - (item?.implicitHeight ?? 0) - 8
-                )
+                y: Math.max(menuWindow.safeTop, Math.min(
+                    menuWindow.submenuAnchorY,
+                    menuWindow.safeBottom - (item?.implicitHeight ?? 0)
+                ))
 
                 scale: active ? 1.0 : 0.9
                 opacity: active ? 1.0 : 0.0
@@ -336,6 +341,7 @@ Scope {
                 }
 
                 HoverHandler {
+                    id: submenuHover
                     onHoveredChanged: {
                         if (hovered) submenuCloseTimer.stop()
                         else submenuCloseTimer.restart()

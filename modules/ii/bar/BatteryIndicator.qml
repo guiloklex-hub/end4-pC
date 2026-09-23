@@ -3,12 +3,16 @@ import qs.modules.common.widgets
 import qs.services
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Services.UPower
 
 MouseArea {
     id: root
     property bool vertical: false
     property bool borderless: Config.options.bar.borderless
     property bool isMaterial: Config.options.bar.cornerStyle === 3
+    property color pillContentColor: Appearance.colors.colOnSecondaryContainer
+    // Na tomada, o raio aparece junto do número; alarga a barra só quando precisa (3 dígitos + raio)
+    readonly property bool showBolt: root.isCharging || root.isPluggedIn || root.chargeState == UPowerDeviceState.FullyCharged
     readonly property var chargeState: Battery.chargeState
     readonly property bool isCharging: Battery.isCharging
     readonly property bool isPluggedIn: Battery.isPluggedIn
@@ -26,7 +30,9 @@ MouseArea {
         anchors.centerIn: parent
         value: percentage
         rotation: root.vertical ? -90 : 0
-        highlightColor: (isLow && !isCharging) ? Appearance.m3colors.m3error : Appearance.colors.colOnSecondaryContainer
+        highlightColor: (isLow && !isCharging) ? Appearance.m3colors.m3error : root.pillContentColor
+        valueBarWidth: (!root.vertical && root.showBolt && root.percentage >= 0.995) ? 40 : 30
+        font.weight: Font.Bold
         Item {
             anchors.centerIn: parent
             width: batteryProgress.valueBarWidth
@@ -47,7 +53,7 @@ MouseArea {
                         fill: 1
                         text: "bolt"
                         iconSize: Appearance.font.pixelSize.smaller
-                        visible: root.isCharging && root.percentage < 1
+                        visible: root.showBolt
                     }
                     StyledText {
                         Layout.alignment: Qt.AlignVCenter
@@ -72,7 +78,7 @@ MouseArea {
                         text: "bolt"
                         Layout.topMargin: 4
                         iconSize: Appearance.font.pixelSize.smaller
-                        visible: root.isCharging && root.percentage < 1
+                        visible: root.showBolt
                     }
                     StyledText {
                         Layout.alignment: Qt.AlignHCenter

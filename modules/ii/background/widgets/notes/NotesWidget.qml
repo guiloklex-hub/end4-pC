@@ -98,7 +98,7 @@ AbstractBackgroundWidget {
                         font.pixelSize: Appearance.font.pixelSize.huge
                         font.weight: Font.Medium
                         color: Appearance.colors.colOnPrimaryContainer
-                        text: "Notes"
+                        text: Translation.tr("Notes")
                     }
                     Item { Layout.fillWidth: true }
 

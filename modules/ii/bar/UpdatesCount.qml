@@ -12,6 +12,7 @@ MouseArea {
     id: root
     property bool vertical: Config.options.bar.vertical
     property bool isMaterial: Config.options.bar.cornerStyle === 3
+    property color pillContentColor: Appearance.colors.colOnLayer1
     property bool borderless: Config.options.bar.borderless
 
     implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : (contentLoader.item?.implicitWidth ?? 0) 
@@ -78,7 +79,7 @@ MouseArea {
             leftPadding: 5
             rightPadding: 3
             font.pixelSize: Appearance.font.pixelSize.small
-            color: root.isMaterial ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1
+            color: root.pillContentColor
             text: Updates.count
         }
     }
@@ -90,7 +91,7 @@ MouseArea {
             rightPadding: 3
             text: "progress_activity"
             iconSize: Appearance.font.pixelSize.normal
-            color: root.isMaterial ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1
+            color: root.pillContentColor
             RotationAnimation on rotation {
                 from: 0; to: 360
                 duration: 1000

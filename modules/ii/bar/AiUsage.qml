@@ -12,6 +12,7 @@ MouseArea {
     id: root
     property bool vertical: Config.options.bar.vertical
     property bool isMaterial: Config.options.bar.cornerStyle === 3
+    property color pillContentColor: Appearance.colors.colOnLayer1
     property bool borderless: Config.options.bar.borderless
 
     property var aiData: ({
@@ -91,11 +92,20 @@ MouseArea {
         }
     }
 
+    // Normal = cor do tema, atenção = âmbar, crítico = vermelho.
+    // (Antes o estado "mid" usava m3tertiary, que em algumas paletas é quase branco.)
+    readonly property string usageClass: root.aiData?.primary?.class ?? "low"
     function getUsageColor() {
-        const cls = root.aiData?.primary?.class ?? "low";
-        if (cls === "critical") return Appearance.colors.colError;
-        if (cls === "mid" || cls === "warning") return Appearance.m3colors.m3tertiary || Appearance.colors.colPrimary;
+        if (usageClass === "critical") return Appearance.colors.colError;
+        if (usageClass === "mid" || usageClass === "warning")
+            return Appearance.m3colors.darkmode ? "#FFB84D" : "#9A5B00";
         return Appearance.colors.colPrimary;
+    }
+    function getUsageIconColor() {
+        if (usageClass === "critical") return Appearance.m3colors.m3onError;
+        if (usageClass === "mid" || usageClass === "warning")
+            return Appearance.m3colors.darkmode ? "#3D2400" : "#FFFFFF";
+        return Appearance.colors.colOnPrimary;
     }
 
     // Bar Content
@@ -116,7 +126,7 @@ MouseArea {
                 anchors.centerIn: parent
                 text: "neurology"
                 iconSize: 14
-                color: Appearance.colors.colOnPrimary
+                color: root.getUsageIconColor()
             }
         }
 
@@ -132,7 +142,7 @@ MouseArea {
             Layout.alignment: Qt.AlignVCenter
             font.pixelSize: Appearance.font.pixelSize.small
             font.weight: Font.Medium
-            color: root.isMaterial ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1
+            color: root.pillContentColor
             text: root.aiData?.primary?.text ?? "AI"
         }
     }

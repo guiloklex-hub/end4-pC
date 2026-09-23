@@ -90,6 +90,13 @@ Variants {
     PanelWindow {
         id: bgRoot
 
+        // Widgets só nos monitores de background.screenList. Se nenhum deles estiver
+        // conectado (ex.: notebook sem o 4K), mostra em todos para não sumirem.
+        readonly property var widgetScreens: Config.options.background.screenList
+        readonly property bool widgetsAllowedHere: widgetScreens.length === 0
+            || widgetScreens.includes(bgRoot.screen.name)
+            || !Quickshell.screens.some(s => widgetScreens.includes(s.name))
+
         required property var modelData
         property string currentWallpaperSource: Config.options.background.wallpaperPath
         property string previousWallpaperSource: Config.options.background.wallpaperPath
@@ -499,8 +506,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.visualizer.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: VisualizerWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -511,8 +517,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.customImage.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: CustomImage {
                         screenWidth:        bgRoot.screen.width
                         screenHeight:       bgRoot.screen.height
@@ -523,8 +528,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.calendar.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: CalendarWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -535,8 +539,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.weather.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: WeatherWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -548,8 +551,7 @@ Variants {
                 FadeLoader {
                     shown: Config.options.background.widgets.clock.enable
                         && (GlobalStates.screenLocked
-                            || Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                            || bgRoot.widgetsAllowedHere)
                     sourceComponent: ClockWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -561,8 +563,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.notes.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: NotesWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -574,9 +575,10 @@ Variants {
                 FadeLoader {
                     id: mediaLoader
                     property bool enableLoading: true
+                    // Só aparece com algo tocando (sem player, mostrava "Toque alguma coisa" ocupando espaço)
                     shown: Config.options.background.widgets.media.enable && enableLoading
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && MprisController.activePlayer !== null
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: MediaWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -595,8 +597,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.images.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: ImageConverterWidget {
                         screenWidth:        bgRoot.screen.width
                         screenHeight:       bgRoot.screen.height
@@ -607,8 +608,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.resources.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: ResourcesWidget {
                         screenWidth:        bgRoot.screen.width
                         screenHeight:       bgRoot.screen.height
@@ -619,8 +619,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.worldClock.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: WorldClockWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -631,8 +630,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.userCard.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: UserCardWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -643,8 +641,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.todo.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: TodoWidget {
                         screenWidth: bgRoot.screen.width
                         screenHeight: bgRoot.screen.height
@@ -655,8 +652,7 @@ Variants {
                 }
                 FadeLoader {
                     shown: Config.options.background.widgets.timers.enable
-                        && (Config.options.background.screenList.length === 0
-                            || Config.options.background.screenList.includes(bgRoot.screen.name))
+                        && bgRoot.widgetsAllowedHere
                     sourceComponent: TimerWidget {
                         screenWidth:        bgRoot.screen.width
                         screenHeight:       bgRoot.screen.height

@@ -73,7 +73,7 @@ Rectangle {
 
             StyledText {
                 text: root.sublabel
-                font.pixelSize: Appearance.font.pixelSize.smallest || 10
+                font.pixelSize: Appearance.font.pixelSize.smaller
                 color: root.sublabelColor
                 font.features: { "tnum": 1 }
                 Layout.fillWidth: true

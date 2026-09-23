@@ -11,7 +11,28 @@ LazyLoader {
     property Item hoverTarget
     default property Item contentItem
     property real popupBackgroundMargin: 0
-    active: hoverTarget && hoverTarget.containsMouse
+
+    // Mantém o popup aberto enquanto o cursor estiver sobre ele, com uma
+    // tolerância para atravessar o espaço entre o widget da barra e o popup.
+    // Sem isso, botões dentro do popup (ex.: sincronizar/abrir no calendário)
+    // eram inalcançáveis: o popup fechava ao sair do widget.
+    property int closeDelay: 300
+    property bool popupHovered: false
+    property bool lingering: false
+    readonly property bool targetHovered: !!(hoverTarget && hoverTarget.containsMouse)
+    onTargetHoveredChanged: {
+        if (targetHovered) {
+            lingering = false
+        } else {
+            lingering = true
+            lingerTimer.restart()
+        }
+    }
+    property Timer lingerTimer: Timer {
+        interval: root.closeDelay
+        onTriggered: root.lingering = false
+    }
+    active: !!hoverTarget && (targetHovered || popupHovered || lingering)
 
     readonly property bool barVertical: Config.options.bar.vertical
     readonly property string barEdge: {
@@ -102,14 +123,19 @@ LazyLoader {
             border.width: 1
             border.color: Appearance.colors.colLayer0Border
 
+            HoverHandler {
+                onHoveredChanged: root.popupHovered = hovered
+            }
+
             // Reparent content here once the window is ready
             Component.onCompleted: {
                 if (popupWindow.innerContent) {
                     popupWindow.innerContent.parent = popupBackground
                     popupWindow.innerContent.anchors.centerIn = popupBackground
-                    console.log("[StyledPopup] Window: " + popupWindow.width + "x" + popupWindow.height + " | Background: " + popupBackground.width + "x" + popupBackground.height + " | Content: " + popupWindow.innerContent.width + " (implicit: " + popupWindow.innerContent.implicitWidth + ")")
                 }
             }
         }
+
+        Component.onDestruction: root.popupHovered = false
     }
 }

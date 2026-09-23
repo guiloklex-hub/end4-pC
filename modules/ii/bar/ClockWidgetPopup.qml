@@ -384,7 +384,7 @@ StyledPopup {
                                         id: calNameText
                                         anchors.centerIn: parent
                                         text: modelData.calendar_name
-                                        font.pixelSize: Appearance.font.pixelSize.smallest
+                                        font.pixelSize: Appearance.font.pixelSize.smaller
                                         color: modelData.calendar_on_color_container || Appearance.colors.colOnSecondaryContainer
                                     }
                                 }

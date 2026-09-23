@@ -64,11 +64,22 @@ AbstractBackgroundWidget {
         return d
     }
 
+    // Primeiro dia da semana e nomes vêm do locale (pt_BR: domingo, "Dom Seg Ter…")
+    readonly property int firstDayOfWeek: Qt.locale().firstDayOfWeek % 7
+    readonly property var weekdayLabels: {
+        let labels = []
+        for (let i = 0; i < 7; i++) {
+            const name = Qt.locale().dayName((firstDayOfWeek + i) % 7, Locale.ShortFormat).replace(".", "")
+            labels.push(name.charAt(0).toUpperCase() + name.slice(1, 3))
+        }
+        return labels
+    }
+
     function getMonthMatrix(date) {
         const year  = date.getFullYear()
         const month = date.getMonth()
         const firstOfMonth   = new Date(year, month, 1)
-        const startOffset    = (firstOfMonth.getDay() + 6) % 7
+        const startOffset    = (firstOfMonth.getDay() - root.firstDayOfWeek + 7) % 7
         const daysInMonth    = new Date(year, month + 1, 0).getDate()
         const daysInPrevMonth = new Date(year, month, 0).getDate()
 
@@ -244,7 +255,7 @@ AbstractBackgroundWidget {
                     Layout.topMargin: 4
 
                     Repeater {
-                        model: ["Mo","Tu","We","Th","Fr","Sa","Su"]
+                        model: root.weekdayLabels
                         delegate: Item {
                             implicitWidth: (card.implicitWidth - 28) / 7
                             implicitHeight: 20
@@ -351,7 +362,7 @@ AbstractBackgroundWidget {
                     Layout.alignment: Qt.AlignHCenter
                     spacing: 4
                     Repeater {
-                        model: ["Mo","Tu","We","Th","Fr","Sa","Su"]
+                        model: root.weekdayLabels
                         delegate: StyledText {
                             Layout.preferredWidth: 28
                             horizontalAlignment: Text.AlignHCenter

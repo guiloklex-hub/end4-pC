@@ -90,7 +90,7 @@ AbstractBackgroundWidget {
                         font.pixelSize: Appearance.font.pixelSize.huge
                         font.weight: Font.Medium
                         color: Appearance.colors.colOnPrimaryContainer
-                        text: "To-Do"
+                        text: Translation.tr("To-Do")
                     }
                     Item { Layout.fillWidth: true }
 

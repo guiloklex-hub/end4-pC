@@ -8,6 +8,8 @@ MouseArea {
     id: root
 
     property bool vertical: false
+    property color pillContentColor: Appearance.colors.colOnLayer1
+    readonly property int rateFontSize: vertical ? Appearance.font.pixelSize.smallest : Appearance.font.pixelSize.smaller
     property real downloadBytesPerSecond: 0
     property real uploadBytesPerSecond: 0
     property real downloadedBytes: 0
@@ -98,7 +100,7 @@ MouseArea {
     TextMetrics {
         id: regularRateMetrics
         text: "999.9 MB/s"
-        font.pixelSize: Appearance.font.pixelSize.smallest
+        font.pixelSize: root.rateFontSize
         font.weight: Font.Medium
     }
 
@@ -130,8 +132,8 @@ MouseArea {
             Layout.preferredWidth: root.vertical ? -1 : regularRateMetrics.width
             horizontalAlignment: Text.AlignRight
             text: speedLine.rateText
-            color: Appearance.colors.colOnLayer1
-            font.pixelSize: Appearance.font.pixelSize.smallest
+            color: root.pillContentColor
+            font.pixelSize: root.rateFontSize
             font.weight: Font.Medium
             font.features: { "tnum": 1 }
         }

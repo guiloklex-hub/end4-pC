@@ -11,6 +11,10 @@ Item {
     property bool vertical: false
     property int warningThreshold: 100
     property bool shown: true
+    property color contentColor: Appearance.colors.colOnSecondaryContainer
+    property string valueSuffix: ""
+    // Vermelho que contrasta com o fundo do grupo: conteúdo escuro => fundo claro => errorContainer (escuro)
+    readonly property color warningColor: contentColor.hslLightness < 0.5 ? Appearance.m3colors.m3errorContainer : Appearance.colors.colError
     clip: !vertical
     visible: vertical ? true : width > 0 && height > 0
     implicitWidth:  vertical ? Appearance.sizes.verticalBarWidth : (resourceRowLayout.x < 0 ? 0 : resourceRowLayout.implicitWidth)
@@ -23,7 +27,7 @@ Item {
             lineWidth: Appearance.rounding.unsharpen
             value: root.percentage
             implicitSize: vertical ? 20 : 20
-            colPrimary: root.warning ? Appearance.colors.colError : Appearance.colors.colOnSecondaryContainer
+            colPrimary: root.warning ? root.warningColor : root.contentColor
             enableAnimation: false
             Item {
                 anchors.centerIn: parent
@@ -35,7 +39,7 @@ Item {
                     fill: 1
                     text: root.iconName
                     iconSize: Appearance.font.pixelSize.normal
-                    color: Appearance.colors.colOnSecondaryContainer
+                    color: root.warning ? root.warningColor : root.contentColor
                 }
             }
         }
@@ -47,7 +51,7 @@ Item {
             lineWidth: Appearance.rounding.unsharpen
             value: root.percentage
             implicitSize: 20
-            colPrimary: root.warning ? Appearance.colors.colError : Appearance.colors.colOnSecondaryContainer
+            colPrimary: root.warning ? root.warningColor : root.contentColor
             accountForLightBleeding: !root.warning
             enableAnimation: false
             Item {
@@ -60,7 +64,7 @@ Item {
                     fill: 1
                     text: root.iconName
                     iconSize: Appearance.font.pixelSize.normal
-                    color: Appearance.m3colors.m3onSecondaryContainer
+                    color: root.contentColor
                 }
             }
         }
@@ -97,15 +101,16 @@ Item {
             implicitHeight: percentageText.implicitHeight
             TextMetrics {
                 id: fullPercentageTextMetrics
-                text: "100"
+                text: "100" + root.valueSuffix
                 font.pixelSize: Appearance.font.pixelSize.small
             }
             StyledText {
                 id: percentageText
                 anchors.centerIn: parent
-                color: Appearance.colors.colOnLayer1
+                color: root.warning ? root.warningColor : root.contentColor
                 font.pixelSize: Appearance.font.pixelSize.small
-                text: `${Math.round(root.percentage * 100).toString()}`
+                font.weight: Font.Medium
+                text: `${Math.round(root.percentage * 100).toString()}${root.valueSuffix}`
             }
         }
 

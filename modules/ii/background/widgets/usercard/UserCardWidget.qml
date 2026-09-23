@@ -79,13 +79,13 @@ AbstractBackgroundWidget {
     }
 
     function greetingFor(hour) {
-        if (hour < 12) return "Good Morning"
-        if (hour < 18) return "Good Afternoon"
-        return "Good Evening"
+        if (hour < 12) return Translation.tr("Good Morning")
+        if (hour < 18) return Translation.tr("Good Afternoon")
+        return Translation.tr("Good Evening")
     }
 
     readonly property string greetingText: greetingFor(DateTime.hour24)
-    readonly property string todayString: "Today • " + DateTime.clock.date.toLocaleDateString(Qt.locale(), "dddd d MMM")
+    readonly property string todayString: Translation.tr("Today") + " • " + DateTime.clock.date.toLocaleDateString(Qt.locale(), "dddd d MMM")
 
     implicitWidth: root.widgetWidth
     implicitHeight: root.widgetHeight
@@ -209,7 +209,7 @@ AbstractBackgroundWidget {
 
                         StyledText {
                             Layout.fillWidth: true
-                            text: "Hi, " + root.username + "!"
+                            text: Translation.tr("Hi, %1!").arg(root.username)
                             font.pixelSize: Appearance.font.pixelSize.normal
                             font.weight: Font.Bold
                             color: Appearance.colors.colOnPrimaryContainer

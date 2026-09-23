@@ -217,7 +217,7 @@ AbstractBackgroundWidget {
                     color: {
                         switch (root.dropStatus) {
                             case "hover": return Appearance.colors.colPrimary
-                            case "done":  return Appearance.colors.colTertiary
+                            case "done":  return Appearance.colors.colOnTertiaryContainer
                             case "error": return Appearance.colors.colError
                             default:      return Appearance.colors.colOnLayer1
                         }
@@ -242,7 +242,7 @@ AbstractBackgroundWidget {
                     color: {
                         switch (root.dropStatus) {
                             case "hover":  return Appearance.colors.colPrimary
-                            case "done":   return Appearance.colors.colTertiary
+                            case "done":   return Appearance.colors.colOnTertiaryContainer
                             case "error":  return Appearance.colors.colError
                             default:       return Appearance.colors.colOnLayer1
                         }
@@ -250,8 +250,8 @@ AbstractBackgroundWidget {
                     opacity: root.dropStatus === "idle" ? 0.6 : 1.0
                     text: {
                         switch (root.dropStatus) {
-                            case "idle":       return "Drop image(s) here\nto convert to ." + root.selectedFormat.toUpperCase()
-                            case "hover":      return "Release to convert to ." + root.selectedFormat.toUpperCase()
+                            case "idle":       return Translation.tr("Drop image(s) here\nto convert to %1").arg("." + root.selectedFormat.toUpperCase())
+                            case "hover":      return Translation.tr("Release to convert to %1").arg("." + root.selectedFormat.toUpperCase())
                             case "converting": return root.statusMessage
                             case "done":       return root.statusMessage
                             case "error":      return root.statusMessage
@@ -290,7 +290,7 @@ AbstractBackgroundWidget {
 
                 StyledText {
                     Layout.leftMargin: 3
-                    text: "Convert to:"
+                    text: Translation.tr("Convert to:")
                     font.pixelSize: Appearance.font.pixelSize.small
                     color: Appearance.colors.colOnLayer1
                     opacity: 0.7

@@ -11,6 +11,7 @@ MouseArea {
     property bool hovered: false
     property bool vertical: Config.options.bar.vertical
     property bool isMaterial: Config.options.bar.cornerStyle === 3
+    property color pillContentColor: Appearance.colors.colOnLayer1
 
     implicitWidth: vertical ? 32 : isMaterial ? (contentLoader.item?.implicitWidth ?? 0) : (contentLoader.item?.implicitWidth + 8 ?? 0)
     implicitHeight: vertical ? (contentLoader.item?.implicitHeight ?? 0) : Appearance.sizes.barHeight
@@ -61,7 +62,7 @@ MouseArea {
             StyledText {
                 visible: root.isMaterial
                 font.pixelSize: Appearance.font.pixelSize.small
-                color: Appearance.colors.colPrimary
+                color: root.pillContentColor
                 text: Weather.data?.temp ?? "--°"
                 Layout.alignment: Qt.AlignVCenter
                 leftPadding: 5
@@ -110,7 +111,7 @@ MouseArea {
             StyledText {
                 visible: root.isMaterial
                 font.pixelSize: Appearance.font.pixelSize.small
-                color: Appearance.colors.colPrimary
+                color: root.pillContentColor
                 text: (Weather.data?.temp ?? "--°").replace(/[CF]$/, "")
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 3

@@ -146,16 +146,16 @@ StyledPopup {
 
             MaterialSymbol {
                 text: "touch_app"
-                iconSize: Appearance.font.pixelSize.smallest
+                iconSize: Appearance.font.pixelSize.smaller
                 color: Appearance.colors.colOnSurfaceVariant
-                opacity: 0.6
+                opacity: 0.85
             }
 
             StyledText {
                 text: "Scroll na barra para alternar • Botão direito atualiza"
-                font.pixelSize: Appearance.font.pixelSize.smallest
+                font.pixelSize: Appearance.font.pixelSize.smaller
                 color: Appearance.colors.colOnSurfaceVariant
-                opacity: 0.6
+                opacity: 0.85
             }
         }
     }

@@ -179,7 +179,7 @@ BarWidgetSwitcher {
                     id: ampmText
                     anchors.centerIn: parent
                     font.pixelSize: Appearance.font.pixelSize.smaller
-                    color: Appearance.colors.colPrimary
+                    color: Appearance.colors.colOnTertiaryContainer
                     text: pill.ampm
                 }
             }

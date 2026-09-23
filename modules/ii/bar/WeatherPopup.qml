@@ -99,9 +99,9 @@ StyledPopup {
                         }
                         StyledText {
                             text: Weather.data?.sunrise ?? "07:34 AM"
-                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colOnLayer0
-                            opacity: 0.8
+                            opacity: 0.9
                         }
                     }
 
@@ -115,9 +115,9 @@ StyledPopup {
                         }
                         StyledText {
                             text: Weather.data?.sunset ?? "05:21 PM"
-                            font.pixelSize: Appearance.font.pixelSize.smallest
+                            font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colOnLayer0
-                            opacity: 0.8
+                            opacity: 0.9
                         }
                     }
                 }

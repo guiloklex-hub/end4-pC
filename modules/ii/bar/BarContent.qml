@@ -64,6 +64,24 @@ Item {
         }
     }
 
+    // Cor de texto/ícone pareada com o fundo de getMaterialPillColor (par "on*" do Material 3).
+    // Repassada aos widgets que declaram a propriedade pillContentColor, garantindo contraste
+    // mesmo quando a paleta gera containers claros no modo escuro.
+    function getMaterialPillContentColor(name) {
+        if (Config.options.bar.cornerStyle !== 3) return Appearance.colors.colOnLayer1;
+        switch(name) {
+            case "media":
+            case "sysTray":
+                return Appearance.colors.colOnSecondaryContainer;
+            case "resources":
+                return Appearance.colors.colOnTertiaryContainer;
+            case "systemIcons":
+                return Appearance.colors.colOnPrimary;
+            default:
+                return Appearance.colors.colOnPrimaryContainer;
+        }
+    }
+
     property var screen: root.QsWindow.window?.screen
     property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen?.width) ? 2 : (Appearance.sizes.barShortenScreenWidthThreshold >= screen?.width) ? 1 : 0
 
@@ -149,8 +167,15 @@ Item {
                             paintMaterialPill: root.shouldPaintMaterialPill(modelData)
                             bgColor: root.getMaterialPillColor(modelData)
                             Loader {
+                                id: pillLoader
                                 Layout.fillHeight: true
                                 source: root.getWidgetUrl(modelData)
+                                Binding {
+                                    target: pillLoader.item
+                                    property: "pillContentColor"
+                                    value: root.getMaterialPillContentColor(modelData)
+                                    when: pillLoader.item !== null && ("pillContentColor" in pillLoader.item)
+                                }
                                 onLoaded: {
                                     if (item && modelData === "visualizer")
                                         item.mirrored = root.getMirroredForIndex(root.effectiveLeftLayout, index)
@@ -242,8 +267,15 @@ Item {
                             paintMaterialPill: root.shouldPaintMaterialPill(modelData)
                             bgColor: root.getMaterialPillColor(modelData)
                             Loader {
+                                id: pillLoader
                                 Layout.fillHeight: true
                                 source: root.getWidgetUrl(modelData)
+                                Binding {
+                                    target: pillLoader.item
+                                    property: "pillContentColor"
+                                    value: root.getMaterialPillContentColor(modelData)
+                                    when: pillLoader.item !== null && ("pillContentColor" in pillLoader.item)
+                                }
                                 onLoaded: {
                                     if (item && modelData === "visualizer")
                                         item.mirrored = root.getMirroredForIndex(root.effectiveMiddleLayout, index)
@@ -335,8 +367,15 @@ Item {
                             paintMaterialPill: root.shouldPaintMaterialPill(modelData)
                             bgColor: root.getMaterialPillColor(modelData)
                             Loader {
+                                id: pillLoader
                                 Layout.fillHeight: true
                                 source: root.getWidgetUrl(modelData)
+                                Binding {
+                                    target: pillLoader.item
+                                    property: "pillContentColor"
+                                    value: root.getMaterialPillContentColor(modelData)
+                                    when: pillLoader.item !== null && ("pillContentColor" in pillLoader.item)
+                                }
                                 onLoaded: {
                                     if (item && modelData === "visualizer")
                                         item.mirrored = root.getMirroredForIndex(root.effectiveRightLayout, index)

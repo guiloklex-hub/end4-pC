@@ -66,7 +66,7 @@ Item {
         StyledText {
             Layout.fillWidth: true
             font.pixelSize: Appearance.font.pixelSize.smaller
-            color: Appearance.colors.colSubtext
+            color: Appearance.colors.colOnSurfaceVariant
             elide: Text.ElideRight
             text: root.focusingThisMonitor && root.activeWindow?.activated && root.biggestWindow ?
                 root.activeWindow?.appId :

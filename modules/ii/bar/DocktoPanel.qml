@@ -17,11 +17,23 @@ Item {
     property real iconSize:      23
     property real btnSize:       28
     property real btnSpacing:    2
+    property var  screen:        null  // definido pelo dock: mostra só janelas deste monitor
+    property bool showPreviews:  true
+    property int  popupEdge: vertical
+        ? (Config.options.bar.bottom ? Edges.Left : Edges.Right)
+        : (Config.options.bar.bottom ? Edges.Top : Edges.Bottom)
+
+    // Janelas visíveis neste monitor. Sem monitor informado pelo compositor, mostra em todos.
+    function windowsOnScreen(toplevels) {
+        if (!root.screen) return toplevels ?? []
+        return (toplevels ?? []).filter(t =>
+            !t.screens || t.screens.length === 0 || t.screens.some(s => s?.name === root.screen.name))
+    }
     property bool vertical:    Config.options.bar.vertical
     property bool isMaterial:  Config.options.bar.cornerStyle === 3
     property var pinnedApps: Config.options?.dock.pinnedApps ?? []
     property var activeUnpinned: TaskbarApps.apps.filter(
-        a => !a.pinned && a.appId !== "SEPARATOR" && a.toplevels.length > 0
+        a => !a.pinned && a.appId !== "SEPARATOR" && root.windowsOnScreen(a.toplevels).length > 0
     )
     property bool showSeparator: _workOrder.length > 0 && activeUnpinned.length > 0
     property var  _workOrder:            pinnedApps.slice()
@@ -222,10 +234,7 @@ Item {
                     required property int index
 
                     property string appId:        root._workOrder[index] ?? ""
-                    property var    appEntry:     TaskbarApps.apps.find(a => a.appId === appId) ?? null
-                    property var    deskEntry:    DesktopEntries.heuristicLookup(appId)
-                    property bool   appActive:    appEntry?.toplevels?.find(t => t.activated) !== undefined
-                    property int    _lastFocused: -1
+                    property var    appEntry:     TaskbarApps.apps.find(a => a.appId.toLowerCase() === appId.toLowerCase()) ?? null
 
                     readonly property bool isDragged: root.dragging && index === root.dragSourceIndex
                     readonly property real dragTranslate: {
@@ -274,13 +283,6 @@ Item {
                     width:  root.btnSize
                     height: root.btnSize
 
-                    Connections {
-                        target: DesktopEntries
-                        function onApplicationsChanged() {
-                            slotItem.deskEntry = DesktopEntries.heuristicLookup(slotItem.appId)
-                        }
-                    }
-
                     DragHandler {
                         id: dragHandler
                         target: null
@@ -307,81 +309,17 @@ Item {
                         }
                     }
 
-                    RippleButton {
+                    DockAppItem {
                         anchors.fill: parent
-                        buttonRadius: Appearance.rounding.small
-                        hoverEnabled: true
-
-                        onClicked: {
-                            if (root.dragging) return
-                            const entry = slotItem.appEntry
-                            if (!entry || entry.toplevels.length === 0) {
-                                Applications.launchDesktopEntry(slotItem.deskEntry)
-                                return
-                            }
-                            const next = (slotItem._lastFocused + 1) % entry.toplevels.length
-                            slotItem._lastFocused = next
-                            entry.toplevels[next].activate()
-                        }
-                        middleClickAction: () => { Applications.launchDesktopEntry(slotItem.deskEntry) }
-                        altAction:         () => { TaskbarApps.togglePin(slotItem.appId) }
-
-                        contentItem: Item {
-                            anchors.centerIn: parent
-
-                            IconImage {
-                                id: pinnedIcon
-                                anchors.centerIn: parent
-                                source: Quickshell.iconPath(
-                                    AppSearch.guessIcon(slotItem.appId), "image-missing")
-                                implicitSize: root.iconSize
-                            }
-
-                            Loader {
-                                active: Config.options.dock.monochromeIcons
-                                anchors.fill: pinnedIcon
-                                sourceComponent: Item {
-                                    Desaturate {
-                                        id: desat; visible: false
-                                        anchors.fill: parent
-                                        source: pinnedIcon; desaturation: 0.8
-                                    }
-                                    ColorOverlay {
-                                        anchors.fill: desat; source: desat
-                                        color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.8)
-                                    }
-                                }
-                            }
-
-                            Flow {
-                                flow: root.vertical ? Flow.TopToBottom : Flow.LeftToRight
-                                spacing: 2
-                                anchors {
-                                    left:   root.vertical ? pinnedIcon.right    : undefined
-                                    top:    root.vertical ? undefined            : pinnedIcon.bottom
-                                    leftMargin:  root.vertical ? 1 : 0
-                                    topMargin:   root.vertical ? 0 : 1
-                                    horizontalCenter: root.vertical ? undefined : parent.horizontalCenter
-                                    verticalCenter:   root.vertical ? parent.verticalCenter : undefined
-                                }
-                                Repeater {
-                                    model: Math.min(slotItem.appEntry?.toplevels?.length ?? 0, 3)
-                                    delegate: Rectangle {
-                                        required property int index
-                                        radius: Appearance.rounding.full
-                                        implicitWidth:  root.vertical
-                                            ? 2
-                                            : (slotItem.appEntry?.toplevels?.length ?? 0) <= 3 ? 4 : 2
-                                        implicitHeight: root.vertical
-                                            ? ((slotItem.appEntry?.toplevels?.length ?? 0) <= 3 ? 4 : 2)
-                                            : 2
-                                        color: slotItem.appActive
-                                            ? Appearance.colors.colPrimary
-                                            : ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.4)
-                                    }
-                                }
-                            }
-                        }
+                        appId: slotItem.appId
+                        pinned: true
+                        toplevels: root.windowsOnScreen(slotItem.appEntry?.toplevels)
+                        iconSize: root.iconSize
+                        btnSize: root.btnSize
+                        vertical: root.vertical
+                        showPreviews: root.showPreviews
+                        popupEdge: root.popupEdge
+                        interactionsBlocked: root.dragging
                     }
                 }
             }
@@ -393,9 +331,10 @@ Item {
 
                 Rectangle {
                     anchors.centerIn: parent
-                    width:  root.vertical ? Math.round(root.btnSize * 0.6) : 1
-                    height: root.vertical ? 1 : Math.round(root.btnSize * 0.6)
-                    color:  root.isMaterial ? Appearance.colors.colPrimary : Appearance.colors.colOutlineVariant
+                    width:  root.vertical ? Math.round(root.btnSize * 0.6) : 2
+                    height: root.vertical ? 2 : Math.round(root.btnSize * 0.6)
+                    radius: 1
+                    color:  root.isMaterial ? Appearance.colors.colPrimary : Appearance.colors.colOutline
                 }
             }
 
@@ -403,91 +342,17 @@ Item {
                 id: activeRepeater
                 model: ScriptModel { values: root.activeUnpinned }
 
-                delegate: Item {
-                    id: activeSlot
+                delegate: DockAppItem {
                     required property var modelData
-
-                    property bool appIsActive: modelData.toplevels.find(t => t.activated) !== undefined
-                    property int  _lastFocused: -1
-
-                    width:  root.btnSize
-                    height: root.btnSize
-
-                    RippleButton {
-                        anchors.fill: parent
-                        buttonRadius: Appearance.rounding.small
-                        hoverEnabled: true
-
-                        onClicked: {
-                            if (activeSlot.modelData.toplevels.length === 0) return
-                            const next = (activeSlot._lastFocused + 1) % activeSlot.modelData.toplevels.length
-                            activeSlot._lastFocused = next
-                            activeSlot.modelData.toplevels[next].activate()
-                        }
-                        middleClickAction: () => {
-                            Applications.launchDesktopEntry(DesktopEntries.heuristicLookup(activeSlot.modelData.appId))
-                        }
-                        altAction: () => {
-                            TaskbarApps.togglePin(activeSlot.modelData.appId)
-                        }
-
-                        contentItem: Item {
-                            anchors.centerIn: parent
-
-                            IconImage {
-                                id: activeIcon
-                                anchors.centerIn: parent
-                                source: Quickshell.iconPath(
-                                    AppSearch.guessIcon(activeSlot.modelData.appId), "image-missing")
-                                implicitSize: root.iconSize
-                            }
-
-                            Loader {
-                                active: Config.options.dock.monochromeIcons
-                                anchors.fill: activeIcon
-                                sourceComponent: Item {
-                                    Desaturate {
-                                        id: desat2; visible: false
-                                        anchors.fill: parent
-                                        source: activeIcon; desaturation: 0.8
-                                    }
-                                    ColorOverlay {
-                                        anchors.fill: desat2; source: desat2
-                                        color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.8)
-                                    }
-                                }
-                            }
-
-                            Flow {
-                                flow: root.vertical ? Flow.TopToBottom : Flow.LeftToRight
-                                spacing: 2
-                                anchors {
-                                    left:   root.vertical ? activeIcon.right    : undefined
-                                    top:    root.vertical ? undefined            : activeIcon.bottom
-                                    leftMargin:  root.vertical ? 1 : 0
-                                    topMargin:   root.vertical ? 0 : 1
-                                    horizontalCenter: root.vertical ? undefined : parent.horizontalCenter
-                                    verticalCenter:   root.vertical ? parent.verticalCenter : undefined
-                                }
-                                Repeater {
-                                    model: Math.min(activeSlot.modelData.toplevels.length, 3)
-                                    delegate: Rectangle {
-                                        required property int index
-                                        radius: Appearance.rounding.full
-                                        implicitWidth:  root.vertical
-                                            ? 2
-                                            : activeSlot.modelData.toplevels.length <= 3 ? 4 : 2
-                                        implicitHeight: root.vertical
-                                            ? (activeSlot.modelData.toplevels.length <= 3 ? 4 : 2)
-                                            : 2
-                                        color: activeSlot.appIsActive
-                                            ? Appearance.colors.colPrimary
-                                            : ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.4)
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    appId: modelData.appId
+                    pinned: false
+                    toplevels: root.windowsOnScreen(modelData.toplevels)
+                    iconSize: root.iconSize
+                    btnSize: root.btnSize
+                    vertical: root.vertical
+                    showPreviews: root.showPreviews
+                    popupEdge: root.popupEdge
+                    interactionsBlocked: root.dragging
                 }
             }
         }
