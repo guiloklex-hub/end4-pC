@@ -1,33 +1,54 @@
 #!/usr/bin/env python3
-import json, subprocess, time, os
+import json
+import os
+import subprocess
+import sys
+import time
 
+force = "--force" in sys.argv or "--test" in sys.argv
 lockfile = "/tmp/qs-autostart.lock"
-if os.path.exists(lockfile):
-    exit(0)
-open(lockfile, 'w').close()
 
-with open(f"{os.environ['HOME']}/.config/illogical-impulse/config.json") as f:
-    data = json.load(f)
+if not force:
+    if os.path.exists(lockfile):
+        sys.exit(0)
+    try:
+        with open(lockfile, "w") as lf:
+            lf.write(str(os.getpid()))
+    except Exception:
+        pass
 
-autostart = data.get('hyprland', {}).get('autostartApps', {})
-if not autostart.get('enable', False):
-    exit(0)
+config_path = os.path.expanduser("~/.config/illogical-impulse/config.json")
+if not os.path.exists(config_path):
+    sys.exit(0)
 
-for app in autostart.get('apps', []):
-    cmd = app.get('cmd', '').strip()
-    workspace = app.get('workspace', 1)
-    delay = app.get('delay', 0)
+try:
+    with open(config_path) as f:
+        data = json.load(f)
+except Exception:
+    sys.exit(0)
+
+autostart = data.get("hyprland", {}).get("autostartApps", {})
+if not force and not autostart.get("enable", False):
+    sys.exit(0)
+
+for app in autostart.get("apps", []):
+    cmd = app.get("cmd", "").strip()
+    workspace = app.get("workspace", 1)
+    delay = app.get("delay", 0)
     if not cmd:
         continue
 
-    subprocess.run(['hyprctl', 'dispatch', f'hl.dsp.focus({{workspace = {workspace}}})'])
-
     expanded_cmd = os.path.expanduser(cmd)
+    escaped_cmd = expanded_cmd.replace("\\", "\\\\").replace('"', '\\"')
+
+    # Switch workspace and execute application via Hyprland Lua dispatchers
+    subprocess.run(["hyprctl", "dispatch", f"hl.dsp.focus({{ workspace = {workspace} }})"], capture_output=True)
     subprocess.Popen(
-        ['hyprctl', 'dispatch', f'hl.dsp.exec_cmd("{expanded_cmd}")'],
+        ["hyprctl", "dispatch", f'hl.dsp.exec_cmd("{escaped_cmd}")'],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         close_fds=True
     )
 
-    time.sleep(delay)
+    if delay > 0:
+        time.sleep(delay)

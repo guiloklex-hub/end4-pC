@@ -69,7 +69,7 @@ ColumnLayout {
             colBackgroundHover: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.6)
             colRipple: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.5)
             onClicked: {
-                Quickshell.execDetached(["python3", `${Directories.scriptPath}/hyprland/autostart.py`])
+                Quickshell.execDetached(["python3", `${Directories.scriptPath}/hyprland/autostart.py`, "--force"])
             }
             contentItem: MaterialSymbol {
                 anchors.centerIn: parent

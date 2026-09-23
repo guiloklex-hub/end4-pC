@@ -1,17 +1,25 @@
-#!/usr/bin/env -S /bin/sh -c "source $(eval echo $ILLOGICAL_IMPULSE_VIRTUAL_ENV)/bin/activate&&exec python -E \"$0\" \"$@\""
+#!/usr/bin/env python3
 import argparse
 import os
 import re
+import subprocess
 import tempfile
 
 BOOL_KEYS = {
     "decoration:blur:enabled",
+    "decoration:blur:xray",
+    "decoration:blur:popups",
     "decoration:shadow:enabled",
     "animations:enabled",
     "input:numlock_by_default",
     "input:touchpad:natural_scroll",
     "input:touchpad:disable_while_typing",
     "input:touchpad:clickfinger_behavior",
+    "input:touchpad:tap_to_click",
+    "general:resize_on_border",
+    "dwindle:pseudotile",
+    "dwindle:preserve_split",
+    "dwindle:smart_split",
 }
 
 ANIM_PRESETS = {
@@ -70,7 +78,8 @@ hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 4, bezier =
 
 def to_lua_value(key, value):
     if key in BOOL_KEYS:
-        return "false" if value == "0" else "true"
+        val_str = str(value).lower().strip()
+        return "false" if val_str in ("0", "false", "off", "no", "disabled") else "true"
     try:
         return str(int(value))
     except ValueError:
@@ -93,7 +102,6 @@ def to_lua_line(key, value):
 
 def make_marker(key):
     parts = key.replace(":", ".").split(".")
-
     fragment = " = { ".join(parts[:-1])
     if fragment:
         fragment += " = { " + parts[-1] + " ="
@@ -157,6 +165,20 @@ def edit_lua(file_path, set_pairs, reset_keys):
     write_atomic(file_path, "".join(new_lines))
 
 
+def apply_live(pairs):
+    for key, value in pairs:
+        parts = key.replace(":", ".").split(".")
+        val = to_lua_value(key, value)
+        inner = f"{{ {parts[-1]} = {val} }}"
+        for part in reversed(parts[:-1]):
+            inner = f"{{ {part} = {inner} }}"
+        lua_code = f"hl.config({inner})"
+        try:
+            subprocess.run(["hyprctl", "eval", lua_code], capture_output=True, timeout=1)
+        except Exception:
+            pass
+
+
 def save_preset(anim_file, preset_name):
     content = ANIM_PRESETS.get(preset_name)
     if not content:
@@ -177,6 +199,7 @@ if __name__ == "__main__":
 
     if args.anim_preset:
         save_preset(os.path.expanduser(args.anim_file), args.anim_preset)
+        subprocess.run(["hyprctl", "reload"], capture_output=True)
 
     raw_sets   = args.set or []
     reset_keys = args.reset or []
@@ -189,5 +212,9 @@ if __name__ == "__main__":
 
     if set_pairs or reset_keys:
         edit_lua(os.path.expanduser(args.file), set_pairs, reset_keys)
+        if set_pairs:
+            apply_live(set_pairs)
+        if reset_keys:
+            subprocess.run(["hyprctl", "reload"], capture_output=True)
     elif not args.anim_preset:
         print("Error: specify --set, --reset, or --anim-preset")

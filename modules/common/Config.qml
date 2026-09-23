@@ -174,6 +174,7 @@ Singleton {
                         property bool enabled: true
                         property int size: 1
                         property int passes: 3
+                        property bool xray: true
                     }
                     property JsonObject shadow: JsonObject {
                         property bool enabled: true
@@ -185,6 +186,9 @@ Singleton {
                     property int gapsIn: 2
                     property int gapsOut: 5
                     property string layout: "dwindle"
+                    property bool pseudotile: true
+                    property bool preserveSplit: true
+                    property bool smartSplit: false
                 }
                 property JsonObject input: JsonObject {
                     property string kbLayout: "us"
@@ -192,11 +196,13 @@ Singleton {
                     property int repeatDelay: 250
                     property int repeatRate: 35
                     property int followMouse: 1
+                    property real sensitivity: 0.0
                     property JsonObject touchpad: JsonObject {
                         property bool naturalScroll: false
                         property bool disableWhileTyping: true
                         property bool clickfingerBehavior: false
                         property real scrollFactor: 0.7
+                        property bool tapToClick: true
                     }
                 }
             }
@@ -217,6 +223,8 @@ Singleton {
                 property string style: "default" // default - minimal
                 property real borderSize: 1
                 property string borderColor: "layer0Border"
+                property real customWidth: 1600
+                property real customHeight: 1000
             }
 
             property JsonObject background: JsonObject {

@@ -38,6 +38,8 @@ RowLayout {
             text: root.text
             color: Appearance.colors.colOnSecondaryContainer
             opacity: root.enabled ? 1 : 0.4
+            elide: Text.ElideRight
+            maximumLineCount: 1
         }
         StyledText {
             Layout.fillWidth: true

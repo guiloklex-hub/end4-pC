@@ -113,7 +113,7 @@ MouseArea {
     Loader {
         anchors.fill: parent
         z: -1
-        active: WM.compositor === "niri"
+        active: true
 
         sourceComponent: Item {
             anchors.fill: parent
@@ -121,7 +121,7 @@ MouseArea {
             Image {
                 id: lockBgSource
                 anchors.fill: parent
-                source: Config.options.background.wallpaperPath
+                source: Qt.resolvedUrl(Config.options.background.wallpaperPath)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
@@ -130,7 +130,11 @@ MouseArea {
             FastBlur {
                 anchors.fill: parent
                 source: lockBgSource
-                radius: 0 // fixme
+                radius: 48
+            }
+            Rectangle {
+                anchors.fill: parent
+                color: "#40000000"
             }
         }
     }

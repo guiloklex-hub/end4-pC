@@ -100,9 +100,7 @@ Item {
         const normalized = computeNormalized(monitorConfig.monitors, idx, newX, newY)
         monitorConfig.monitors = normalized
         root.previewPositions = {}
-        for (let i = 0; i < normalized.length; i++) {
-            monitorConfig.applyMonitor(normalized[i])
-        }
+        monitorConfig.applyAll(normalized)
         monitorConfig.save()
     }
 
