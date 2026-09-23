@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 
 import qs.modules.common
+import qs.modules.ii.appDrawer
 import qs.modules.ii.background
 import qs.modules.ii.bar
 import qs.modules.ii.dock
@@ -36,6 +37,7 @@ Scope {
     PanelLoader { component: OnScreenKeyboard {} }
     PanelLoader { component: Overlay {} }
     PanelLoader { component: Overview {} }
+    PanelLoader { component: AppDrawer {} }
     PanelLoader { component: RegionSelector {} }
     PanelLoader { component: ScreenCorners {} }
     PanelLoader { component: ScreenTranslator {} }

@@ -1,5 +1,6 @@
 pragma Singleton
 
+import qs.modules.common
 import Quickshell
 
 Singleton {
@@ -17,8 +18,16 @@ Singleton {
         return true
     }
 
+    // Alimenta "Recentes" do menu de apps
+    function recordLaunch(desktopId) {
+        if (!desktopId || !Persistent.ready) return
+        const recent = Persistent.states.launcher.recentApps.filter(id => id !== desktopId)
+        Persistent.states.launcher.recentApps = [desktopId].concat(recent).slice(0, 24)
+    }
+
     function launchDesktopEntry(entry) {
         if (!entry) return false
+        root.recordLaunch(entry.id)
 
         let desktopId = entry.id ?? ""
         if (desktopId.length > 0) {

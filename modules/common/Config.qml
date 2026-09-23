@@ -554,6 +554,7 @@ Singleton {
 
             property JsonObject launcher: JsonObject {
                 property list<string> pinnedApps: [ "org.kde.dolphin", "kitty", "cmake-gui"]
+                property list<string> hiddenApps: [] // IDs escondidos do menu de apps
             }
 
             property JsonObject light: JsonObject {

@@ -149,6 +149,10 @@ Singleton {
                 }
             }
 
+            property JsonObject launcher: JsonObject {
+                property list<string> recentApps: [] // IDs, mais recente primeiro
+            }
+
             property JsonObject timer: JsonObject {
                 property JsonObject pomodoro: JsonObject {
                     property bool running: false

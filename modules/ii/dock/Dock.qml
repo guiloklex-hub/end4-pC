@@ -82,14 +82,13 @@ Scope {
                     buttonRadius: Appearance.rounding.small
                     hoverEnabled: true
 
-                    colBackground: GlobalStates.overviewOpen ? Appearance.colors.colPrimaryContainer : "transparent"
+                    colBackground: GlobalStates.appDrawerOpen ? Appearance.colors.colPrimaryContainer : "transparent"
                     colBackgroundHover: Appearance.colors.colLayer1Hover
                     colRipple: Appearance.colors.colPrimaryActive
-                    toggled: GlobalStates.overviewOpen
+                    toggled: GlobalStates.appDrawerOpen
 
-                    onClicked: {
-                        GlobalStates.overviewOpen = !GlobalStates.overviewOpen
-                    }
+                    // Abre o menu de apps (as janelas dos workspaces ficam no Super+Tab)
+                    onClicked: AppCatalog.toggleDrawer()
 
                     contentItem: Item {
                         anchors.fill: parent
@@ -97,7 +96,7 @@ Scope {
                             anchors.centerIn: parent
                             iconSize: Math.round(dockRoot.iconSize * 0.8)
                             text: "apps"
-                            color: menuBtn.hovered || menuBtn.toggled ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
+                            color: menuBtn.toggled ? Appearance.colors.colOnPrimary : menuBtn.hovered ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer0
                         }
                     }
                 }
