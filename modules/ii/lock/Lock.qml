@@ -69,7 +69,7 @@ LockScreen {
                 }
 
                 var next = {}
-                var batch = "keyword animation workspaces,1,7,menu_decel,slidevert; "
+                var batch = ""
                 for (var i = 0; i < Quickshell.screens.length; ++i) {
                     var mon = Quickshell.screens[i].name
                     var mData = HyprlandData.monitors.find(m => m.name === mon)
@@ -90,17 +90,6 @@ LockScreen {
                     restoreTimer.start()
                 }
             }
-        }
-    }
-
-    Variants {
-        model: Quickshell.screens
-        delegate: Scope {
-            required property ShellScreen modelData
-            property bool shouldPush: GlobalStates.screenLocked
-            property string targetMonitorName: modelData.name
-            property int verticalMovementDistance: modelData.height
-            property int horizontalSqueeze: modelData.width * 0.2
         }
     }
 }

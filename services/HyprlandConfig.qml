@@ -30,6 +30,16 @@ Singleton {
         Quickshell.execDetached(args)
     }
 
+    // Só grava o arquivo de sobreposições, sem aplicar ao vivo
+    // (usado para sincronizar config.json -> main.lua ao abrir o painel)
+    function syncFile(entries: var) {
+        let args = ["python3", root.configuratorScriptPath, "--file", root.shellOverridesPath, "--no-live"]
+        for (let key in entries) {
+            args.push("--set", key, String(entries[key]))
+        }
+        Quickshell.execDetached(args)
+    }
+
     function reset(key: string) {
         Quickshell.execDetached([
             "python3", root.configuratorScriptPath,

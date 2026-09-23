@@ -10,6 +10,7 @@ import qs.modules.common.widgets
 import qs.modules.common.functions
 import qs.modules.common.panels.lock
 import qs.modules.ii.bar as Bar
+import qs.modules.ii.background.widgets.clock as Clock
 import Quickshell
 import Quickshell.Services.SystemTray
 
@@ -139,6 +140,74 @@ MouseArea {
         }
     }
 
+    // Relógio: o fundo da área de trabalho (com o relógio dela) fica encoberto
+    // pelo papel de parede desfocado acima, então a tela de bloqueio tem o seu.
+    // Segue o estilo "ao bloquear" do relógio da área de trabalho.
+    ColumnLayout {
+        id: clockArea
+        readonly property string clockStyle: Config.options.background.widgets.clock.styleLocked
+        spacing: 14
+        scale: root.toolbarScale
+        opacity: root.toolbarOpacity
+        anchors {
+            horizontalCenter: Config.options.lock.centerClock ? parent.horizontalCenter : undefined
+            verticalCenter: Config.options.lock.centerClock ? parent.verticalCenter : undefined
+            verticalCenterOffset: -mainIsland.height
+            left: Config.options.lock.centerClock ? undefined : parent.left
+            top: Config.options.lock.centerClock ? undefined : parent.top
+            margins: 60
+        }
+
+        Loader {
+            Layout.alignment: Qt.AlignHCenter
+            sourceComponent: clockArea.clockStyle === "digital" ? digitalClock
+                : clockArea.clockStyle === "pixel" ? pixelClock : cookieClock
+        }
+        Component {
+            id: cookieClock
+            Clock.CookieClock { implicitSize: 260 }
+        }
+        Component {
+            id: digitalClock
+            Clock.DigitalClock { colText: Appearance.colors.colOnLayer0 }
+        }
+        Component {
+            id: pixelClock
+            Clock.PixelClock {}
+        }
+
+        // Data (o relógio digital já mostra a sua)
+        Clock.ClockText {
+            visible: clockArea.clockStyle !== "digital"
+            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: false
+            text: DateTime.longDate
+            color: Appearance.colors.colOnLayer0
+            font.pixelSize: Appearance.font.pixelSize.huge
+        }
+
+        Row {
+            visible: Config.options.lock.showLockedText
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 6
+            MaterialSymbol {
+                anchors.verticalCenter: parent.verticalCenter
+                fill: 1
+                text: "lock"
+                iconSize: Appearance.font.pixelSize.large
+                color: Appearance.colors.colOnLayer0
+                style: Text.Raised
+                styleColor: Appearance.colors.colShadow
+            }
+            Clock.ClockText {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Translation.tr("Locked")
+                color: Appearance.colors.colOnLayer0
+                font.pixelSize: Appearance.font.pixelSize.normal
+            }
+        }
+    }
+
     // Main toolbar: password box
     Toolbar {
         id: mainIsland
@@ -164,10 +233,35 @@ MouseArea {
 
             sourceComponent: MaterialSymbol {
                 id: fingerprintIcon
+                property bool failed: false
                 fill: 1
                 text: "fingerprint"
                 iconSize: Appearance.font.pixelSize.hugeass
-                color: Appearance.colors.colOnSurfaceVariant
+                color: failed ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
+                Behavior on color {
+                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                }
+                // Dedo não reconhecido: treme e fica vermelho por um instante
+                SequentialAnimation {
+                    id: fingerShake
+                    NumberAnimation { target: fingerprintIcon; property: "x"; to: -6; duration: 50 }
+                    NumberAnimation { target: fingerprintIcon; property: "x"; to: 6; duration: 50 }
+                    NumberAnimation { target: fingerprintIcon; property: "x"; to: -3; duration: 40 }
+                    NumberAnimation { target: fingerprintIcon; property: "x"; to: 0; duration: 40 }
+                }
+                Timer {
+                    id: fingerFailedTimer
+                    interval: 1500
+                    onTriggered: fingerprintIcon.failed = false
+                }
+                Connections {
+                    target: root.context
+                    function onFingerprintFailed() {
+                        fingerprintIcon.failed = true;
+                        fingerFailedTimer.restart();
+                        fingerShake.restart();
+                    }
+                }
             }
         }
 
@@ -288,7 +382,7 @@ MouseArea {
         IconAndTextPair {
             Layout.leftMargin: 8
             icon: "account_circle"
-            visible: !Config.options.lock.showMedia || MprisController.activePlayer === null
+            visible: !Config.options.lock.showMedia || root.activePlayer === null
             text: SystemInfo.username
         }
 
@@ -297,14 +391,14 @@ MouseArea {
             Layout.leftMargin: 2
             Layout.rightMargin: 2
             Layout.alignment: Qt.AlignVCenter
-            active: MprisController.activePlayer !== null
+            active: root.activePlayer !== null
             visible: active && Config.options.lock.showMedia
             
             sourceComponent: Item {
                 implicitWidth: mediaRow.implicitWidth
                 implicitHeight: mediaRow.implicitHeight
                 
-                readonly property MprisPlayer activePlayer: MprisController.activePlayer
+                readonly property MprisPlayer activePlayer: root.activePlayer
                 readonly property string cleanedTitle: StringUtils.cleanMusicTitle(activePlayer?.trackTitle) || ""
                 
                 Timer {
@@ -423,7 +517,7 @@ MouseArea {
         Loader {
             Layout.rightMargin: 8
             Layout.fillHeight: true
-            visible: !Config.options.lock.showMedia || MprisController.activePlayer === null
+            visible: !Config.options.lock.showMedia || root.activePlayer === null
 
             sourceComponent: Row {
                 spacing: 8
@@ -475,7 +569,7 @@ MouseArea {
         IconAndTextPair {
             visible: Battery.available
             icon: Battery.isCharging ? "bolt" : "battery_android_full"
-            text: Math.round(Battery.percentage * 100)
+            text: Math.round(Battery.percentage * 100) + "%"
             color: (Battery.isLow && !Battery.isCharging) ? Appearance.colors.colError : Appearance.colors.colOnSurfaceVariant
         }
 

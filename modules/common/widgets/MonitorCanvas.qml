@@ -98,8 +98,13 @@ Item {
 
     function commitPosition(idx, newX, newY) {
         const normalized = computeNormalized(monitorConfig.monitors, idx, newX, newY)
-        monitorConfig.monitors = normalized
         root.previewPositions = {}
+        // Hyprland: aplica e pede confirmação (volta sozinho se não confirmar)
+        if (typeof monitorConfig.applyWithConfirm === "function") {
+            monitorConfig.applyWithConfirm(normalized)
+            return
+        }
+        monitorConfig.monitors = normalized
         monitorConfig.applyAll(normalized)
         monitorConfig.save()
     }

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+import qs
 import Quickshell
 import Quickshell.Io
 import Qt.labs.folderlistmodel
@@ -211,13 +212,27 @@ ColumnLayout {
                     debounceTimer.restart()
                 }
 
+                // Salva ao parar de digitar, ao sair do campo ou ao fechar o painel
+                // (antes eram 3 s e fechar o painel nesse intervalo perdia o texto)
+                function flush() {
+                    debounceTimer.stop()
+                    if (cmdArea.text !== (entryRow.modelData.cmd ?? ""))
+                        root.updateEntry(entryRow.index, "cmd", cmdArea.text)
+                }
+                onActiveFocusChanged: if (!activeFocus && ready) flush()
+
+                Connections {
+                    target: GlobalStates
+                    function onSettingsOpenChanged() {
+                        if (!GlobalStates.settingsOpen && debounceTimer.running) cmdArea.flush()
+                    }
+                }
+
                 Timer {
                     id: debounceTimer
-                    interval: 3000
+                    interval: 800
                     repeat: false
-                    onTriggered: {
-                        root.updateEntry(entryRow.index, "cmd", cmdArea.text)
-                    }
+                    onTriggered: cmdArea.flush()
                 }
             }
         }

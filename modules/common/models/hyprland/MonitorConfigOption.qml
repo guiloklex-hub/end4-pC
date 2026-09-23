@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQml
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import qs.services
@@ -11,7 +12,18 @@ NestableObject {
 
     property var monitors: []
 
+    // Confirmação: toda mudança é aplicada ao vivo e só é gravada em disco
+    // quando confirmada. Sem resposta em confirmTimeout segundos, volta ao
+    // arranjo anterior (protege contra tela preta / escala ilegível).
+    readonly property int confirmTimeout: 15
+    property bool pendingConfirm: false
+    property int confirmSecondsLeft: 0
+    property var confirmedMonitors: null
+
+    readonly property int enabledCount: monitors.filter(m => !m.disabled).length
+
     Component.onCompleted: fetchProc.running = true
+    Component.onDestruction: if (pendingConfirm) revertChanges()
 
     Connections {
         target: Hyprland
@@ -26,6 +38,64 @@ NestableObject {
         let m = root.monitors.slice()
         m[index] = Object.assign({}, m[index], changes)
         root.monitors = m
+    }
+
+    // Aplica uma mudança num monitor e reencosta os vizinhos: se o tamanho
+    // lógico mudou (escala, resolução, rotação), quem estava colado à direita
+    // ou abaixo acompanha a nova borda, sem buraco nem sobreposição.
+    function changeMonitor(index, changes) {
+        const list = root.monitors.map(m => Object.assign({}, m))
+        const old = list[index]
+        const updated = Object.assign({}, old, changes)
+        list[index] = updated
+        if (!old.disabled && !updated.disabled) {
+            const oldRight = old.x + root.logicalWidth(old)
+            const newRight = updated.x + root.logicalWidth(updated)
+            const oldBottom = old.y + root.logicalHeight(old)
+            const newBottom = updated.y + root.logicalHeight(updated)
+            for (let i = 0; i < list.length; i++) {
+                if (i === index) continue
+                if (list[i].x === oldRight) list[i].x = newRight
+                if (list[i].y === oldBottom) list[i].y = newBottom
+            }
+        }
+        root.applyWithConfirm(list)
+    }
+
+    function applyWithConfirm(list) {
+        if (!root.pendingConfirm)
+            root.confirmedMonitors = root.monitors.map(m => Object.assign({}, m))
+        root.monitors = list
+        root.applyAll(list)
+        root.pendingConfirm = true
+        root.confirmSecondsLeft = root.confirmTimeout
+        confirmTimer.restart()
+    }
+
+    function keepChanges() {
+        confirmTimer.stop()
+        root.pendingConfirm = false
+        root.confirmedMonitors = null
+        root.save()
+    }
+
+    function revertChanges() {
+        confirmTimer.stop()
+        root.pendingConfirm = false
+        const previous = root.confirmedMonitors
+        root.confirmedMonitors = null
+        if (!previous) return
+        root.monitors = previous
+        root.applyAll(previous)
+    }
+
+    // Escalas que dão tamanho lógico inteiro para o modo atual (Hyprland
+    // recusa as demais e troca por outra por conta própria)
+    function validScales(m) {
+        if (!m || !m.width || !m.height) return [1]
+        const candidates = [1, 1.25, 4 / 3, 1.5, 1.6, 5 / 3, 1.75, 2, 2.25, 2.5, 3]
+        const isInt = v => Math.abs(v - Math.round(v)) < 0.01
+        return candidates.filter(s => isInt(m.width / s) && isInt(m.height / s))
     }
 
     function _buildLuaLine(m) {
@@ -57,8 +127,23 @@ NestableObject {
         if (root.monitors.length === 0) return
         if (root.monitors.some(m => !m.name)) return
 
-        const luaLines = root.monitors.map(m => root._buildLuaLine(m)).join("\n")
-        const confLines = "# Configuração de Monitores gerada pelo QuickShell\n" + root.monitors.map(m => root._buildConfLine(m)).join("\n")
+        // Telas desconectadas não aparecem no hyprctl: mantém as linhas delas
+        // (sem isso, salvar com o monitor externo desplugado apagava a config dele)
+        const connected = new Set(root.monitors.map(m => m.name))
+        const keptLua = (luaFile.text() ?? "").split("\n").filter(line => {
+            const match = line.match(/^\s*hl\.monitor\(\{\s*output\s*=\s*"([^"]+)"/)
+            return match && !connected.has(match[1])
+        })
+        const keptConf = (confFile.text() ?? "").split("\n").filter(line => {
+            const match = line.match(/^\s*monitor\s*=\s*([^,\s]+)/)
+            return match && !connected.has(match[1])
+        })
+
+        const luaLines = "-- Gerado pelo painel do Quickshell (Super+Z > Hyprland > Telas).\n"
+            + "-- Posições em pixels LÓGICOS (resolução / escala).\n"
+            + keptLua.concat(root.monitors.map(m => root._buildLuaLine(m))).join("\n")
+        const confLines = "# Configuração de Monitores gerada pelo QuickShell\n"
+            + keptConf.concat(root.monitors.map(m => root._buildConfLine(m))).join("\n")
 
         const escapedLua = luaLines.replace(/'/g, "'\\''")
         const escapedConf = confLines.replace(/'/g, "'\\''")
@@ -82,13 +167,8 @@ NestableObject {
         const mons = (list ?? root.monitors).filter(m => m && m.name)
         if (mons.length === 0) return
         const body = mons.map(m => root._buildLuaLine(m)).join(" ")
-        applyProc.command = ["hyprctl", "eval", `(function() ${body} end)()`]
-        applyProc.running = true
-    }
-
-    function applyAndSave(index) {
-        root.applyAll(root.monitors)
-        root.save()
+        // execDetached: também funciona ao reverter durante a destruição do objeto
+        Quickshell.execDetached(["hyprctl", "eval", `(function() ${body} end)()`])
     }
 
     // Tamanho LOGICO = resolucao fisica / scale. E nessa unidade que o
@@ -142,7 +222,31 @@ NestableObject {
         }
     }
 
-    Process { id: applyProc }
+    FileView {
+        id: luaFile
+        path: `${Quickshell.env("HOME")}/.config/hypr/monitors.lua`
+        blockLoading: true
+        watchChanges: true
+        onFileChanged: reload()
+    }
+
+    FileView {
+        id: confFile
+        path: `${Quickshell.env("HOME")}/.config/hypr/monitors.conf`
+        blockLoading: true
+        watchChanges: true
+        onFileChanged: reload()
+    }
+
+    Timer {
+        id: confirmTimer
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            root.confirmSecondsLeft -= 1
+            if (root.confirmSecondsLeft <= 0) root.revertChanges()
+        }
+    }
 
     Process {
         id: saveProc

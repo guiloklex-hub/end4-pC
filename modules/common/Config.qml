@@ -159,7 +159,7 @@ Singleton {
 
             property JsonObject hyprland: JsonObject {
                 property JsonObject animations: JsonObject {
-                    property string animation: "normal"
+                    property string animation: "material" // material, fast (elástica), niri
                     property bool enable: true
                 }
                 property JsonObject autostartApps: JsonObject {
@@ -170,6 +170,7 @@ Singleton {
                     property int rounding: 22
                     property real activeOpacity: 1.0
                     property real inactiveOpacity: 0.9
+                    property bool dimInactive: true
                     property JsonObject blur: JsonObject {
                         property bool enabled: true
                         property int size: 1
@@ -192,6 +193,8 @@ Singleton {
                 }
                 property JsonObject input: JsonObject {
                     property string kbLayout: "us"
+                    property string kbModel: ""
+                    property string kbVariant: ""
                     property bool numlock: true
                     property int repeatDelay: 250
                     property int repeatRate: 35

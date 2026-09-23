@@ -10,6 +10,7 @@ BOOL_KEYS = {
     "decoration:blur:xray",
     "decoration:blur:popups",
     "decoration:shadow:enabled",
+    "decoration:dim_inactive",
     "animations:enabled",
     "input:numlock_by_default",
     "input:touchpad:natural_scroll",
@@ -22,7 +23,14 @@ BOOL_KEYS = {
     "dwindle:smart_split",
 }
 
+ANIM_HEADER = """\
+-- Gerado pelo painel do Quickshell (Super+Z) ao escolher um preset de animação.
+-- Vazio = usa o conjunto padrão (Material 3) de ~/.config/hypr/config/animations.lua.
+"""
+
 ANIM_PRESETS = {
+    # Material 3: sem sobreposição, vale o conjunto de config/animations.lua
+    "material": "",
     "fast": """\
 hl.curve("pc_wobble", { type = "bezier", points = { {0.15, 1.15}, {0.35, 1.0}  } })
 hl.curve("pc_decel",  { type = "bezier", points = { {0.05, 0.9},  {0.1,  1.05} } })
@@ -162,7 +170,10 @@ def edit_lua(file_path, set_pairs, reset_keys):
             new_lines.append(to_lua_line(k, v))
             print(f"Added:   {to_lua_line(k, v).strip()}")
 
-    write_atomic(file_path, "".join(new_lines))
+    new_content = "".join(new_lines)
+    # Sem mudança: não regrava (evita recarregar o Hyprland à toa)
+    if new_content != "".join(lines):
+        write_atomic(file_path, new_content)
 
 
 def apply_live(pairs):
@@ -180,11 +191,13 @@ def apply_live(pairs):
 
 
 def save_preset(anim_file, preset_name):
-    content = ANIM_PRESETS.get(preset_name)
-    if not content:
+    # "normal" era o preset padrão antigo: equivale ao conjunto Material 3
+    if preset_name == "normal":
+        preset_name = "material"
+    if preset_name not in ANIM_PRESETS:
         print(f"Unknown preset '{preset_name}'")
         return
-    write_atomic(anim_file, content)
+    write_atomic(anim_file, ANIM_HEADER + ANIM_PRESETS[preset_name])
     print(f"Wrote preset '{preset_name}' -> {anim_file}")
 
 
@@ -195,6 +208,8 @@ if __name__ == "__main__":
     p.add_argument("--reset", action="append", metavar="KEY")
     p.add_argument("--anim-preset", metavar="PRESET")
     p.add_argument("--anim-file", default="~/.config/hypr/hyprland/shellOverrides/animations.lua")
+    # Só grava o arquivo, sem aplicar no Hyprland em execução (sincronização ao abrir o painel)
+    p.add_argument("--no-live", action="store_true")
     args = p.parse_args()
 
     if args.anim_preset:
@@ -212,7 +227,7 @@ if __name__ == "__main__":
 
     if set_pairs or reset_keys:
         edit_lua(os.path.expanduser(args.file), set_pairs, reset_keys)
-        if set_pairs:
+        if set_pairs and not args.no_live:
             apply_live(set_pairs)
         if reset_keys:
             subprocess.run(["hyprctl", "reload"], capture_output=True)

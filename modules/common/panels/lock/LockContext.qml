@@ -13,6 +13,7 @@ Scope {
     signal shouldReFocus()
     signal unlocked(targetAction: var)
     signal failed()
+    signal fingerprintFailed()
 
     // These properties are in the context and not individual lock surfaces
     // so all surfaces can share the same state.
@@ -125,13 +126,26 @@ Scope {
         configDirectory: "pam"
         config: "fprintd.conf"
 
+        // "Failed to match fingerprint" chega como mensagem de erro, antes do fim da tentativa
+        onPamMessage: {
+            if (this.messageIsError) root.fingerprintFailed();
+        }
+
         onCompleted: result => {
             if (result == PamResult.Success) {
                 root.unlocked(root.targetAction);
                 stopFingerPam();
-            } else if (result == PamResult.Error) { // if timeout or etc..
-                tryFingerUnlock()
+            } else if (GlobalStates.screenLocked) {
+                // Tempo esgotado (a cada ~30 s) ou tentativas esgotadas: volta a escutar
+                // o leitor. Antes só reiniciava no "Error", e a digital parava de funcionar.
+                fingerRetryTimer.restart();
             }
         }
+    }
+
+    Timer {
+        id: fingerRetryTimer
+        interval: 1000
+        onTriggered: if (GlobalStates.screenLocked && !fingerPam.active) root.tryFingerUnlock()
     }
 }

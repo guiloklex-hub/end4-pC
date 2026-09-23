@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -40,6 +41,10 @@ for app in autostart.get("apps", []):
 
     expanded_cmd = os.path.expanduser(cmd)
     escaped_cmd = expanded_cmd.replace("\\", "\\\\").replace('"', '\\"')
+
+    # Com UWSM, o app roda na própria unidade systemd (fora do processo do Hyprland)
+    if shutil.which("uwsm"):
+        escaped_cmd = f"uwsm app -- {escaped_cmd}"
 
     # Switch workspace and execute application via Hyprland Lua dispatchers
     subprocess.run(["hyprctl", "dispatch", f"hl.dsp.focus({{ workspace = {workspace} }})"], capture_output=True)

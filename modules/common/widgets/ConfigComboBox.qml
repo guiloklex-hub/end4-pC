@@ -15,6 +15,7 @@ RowLayout {
     property var currentValue: undefined
 
     property real fieldWidth: 220
+    property real fieldMaxWidth: Infinity // limita a largura (o combo preenche o espaço livre)
 
     property alias comboBox: comboBox
 
@@ -55,6 +56,7 @@ RowLayout {
     StyledComboBox {
         id: comboBox
         Layout.preferredWidth: root.fieldWidth
+        Layout.maximumWidth: root.fieldMaxWidth
         Layout.alignment: Qt.AlignVCenter
         enabled: root.enabled
         textRole: root.textRole
