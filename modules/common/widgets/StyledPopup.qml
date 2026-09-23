@@ -94,8 +94,8 @@ LazyLoader {
             }
 
             // Use local reference instead of crossing LazyLoader scope boundary
-            implicitWidth: (popupWindow.innerContent?.implicitWidth ?? 0) + margin * 2
-            implicitHeight: (popupWindow.innerContent?.implicitHeight ?? 0) + margin * 2
+            implicitWidth: Math.max(popupWindow.innerContent?.implicitWidth ?? 0, popupWindow.innerContent?.width ?? 0) + margin * 2
+            implicitHeight: Math.max(popupWindow.innerContent?.implicitHeight ?? 0, popupWindow.innerContent?.height ?? 0) + margin * 2
 
             color: Appearance.colors.colLayer1Base
             radius: Appearance.rounding.normal + 4
@@ -107,6 +107,7 @@ LazyLoader {
                 if (popupWindow.innerContent) {
                     popupWindow.innerContent.parent = popupBackground
                     popupWindow.innerContent.anchors.centerIn = popupBackground
+                    console.log("[StyledPopup] Window: " + popupWindow.width + "x" + popupWindow.height + " | Background: " + popupBackground.width + "x" + popupBackground.height + " | Content: " + popupWindow.innerContent.width + " (implicit: " + popupWindow.innerContent.implicitWidth + ")")
                 }
             }
         }

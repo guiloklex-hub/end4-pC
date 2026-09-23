@@ -190,6 +190,12 @@ BarWidgetSwitcher {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: !Config.options.bar.tooltips.clickToShow
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.RightButton) {
+                GoogleAgenda.openCalendarWeb();
+            }
+        }
         ClockWidgetPopup {
             hoverTarget: mouseArea
             today: root.today
