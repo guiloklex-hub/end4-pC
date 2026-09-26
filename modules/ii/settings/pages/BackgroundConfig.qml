@@ -959,7 +959,7 @@ ContentPage {
             
             GridLayout {
                 Layout.fillWidth: true
-                columns: 3
+                columns: page.width < 700 ? 2 : 3
                 rowSpacing: 8
                 columnSpacing: 8
                 Repeater {
@@ -1074,9 +1074,12 @@ ContentPage {
                                 }
                             }
                             StyledText {
+                                Layout.fillWidth: true
                                 text: modelData.name
                                 font.pixelSize: Appearance.font.pixelSize.normal
                                 color: Appearance.colors.colOnLayer1
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
                             }
                             StyledText {
                                 text: modelData.enabled ? Translation.tr("Enabled") : Translation.tr("Disabled")

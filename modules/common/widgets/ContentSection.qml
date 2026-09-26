@@ -24,10 +24,13 @@ ColumnLayout {
             color: bgColor
         }
         StyledText {
+            Layout.fillWidth: true
             text: root.title
             font.pixelSize: Appearance.font.pixelSize.larger
             font.weight: Font.Medium
             color: Appearance.colors.colOnSecondaryContainer
+            elide: Text.ElideRight
+            maximumLineCount: 1
         }
     }
     ColumnLayout {

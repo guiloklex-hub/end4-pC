@@ -7,7 +7,6 @@ import qs.modules.common.widgets
 ContentPage {
     id: page
     forceWidth: true
-    bottomContentPadding: 15
 
     //This was intended to go into the results more deeply but in the end I didn't like it but I left it just in case lol
     function goTo(term) {
@@ -279,7 +278,7 @@ ContentPage {
                     ConfigTextArea {
                         id: baseUrlField
                         Layout.fillWidth: true
-                        fieldWidth: 320
+                        fieldWidth: Math.min(320, page.width * 0.45)
                         buttonIcon: "travel_explore"
                         text: Translation.tr("Base URL")
                         value: Config.options.search.engineBaseUrl

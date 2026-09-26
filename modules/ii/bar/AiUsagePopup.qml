@@ -8,10 +8,13 @@ import QtQuick.Layouts
 StyledPopup {
     id: root
     property var aiData: null
+    // Até 4 cards de 175px por linha: o Flow sem largura fixa esticava o popup
+    // até o provedor com mais cards.
+    readonly property int contentWidth: 175 * 4 + 6 * 3
 
     ColumnLayout {
         id: popupContent
-        implicitWidth: 360
+        implicitWidth: root.contentWidth
         spacing: 10
 
         // Header
@@ -47,9 +50,12 @@ StyledPopup {
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colOnSurfaceVariant
                     opacity: 0.7
-                    text: (root.aiData && root.aiData.totalConfigured > 0)
-                        ? `${root.aiData.totalConfigured} planos ativos`
-                        : "Verificando cotas..."
+                    text: {
+                        if (!root.aiData || (root.aiData.totalConfigured ?? 0) === 0)
+                            return root.aiData?.error ? `Erro: ${root.aiData.error}` : "Verificando cotas...";
+                        const errs = root.aiData.errorCount ?? 0;
+                        return `${root.aiData.totalConfigured} planos ativos` + (errs > 0 ? ` • ${errs} com erro` : "");
+                    }
                 }
             }
 
@@ -104,11 +110,39 @@ StyledPopup {
                             font.weight: Font.DemiBold
                             color: Appearance.colors.colOnSurface
                         }
+
+                        StyledText {
+                            visible: !!providerEntry.modelData.stale
+                            text: "(cache)"
+                            font.pixelSize: Appearance.font.pixelSize.smaller
+                            color: Appearance.colors.colOnSurfaceVariant
+                            opacity: 0.7
+                        }
+                    }
+
+                    // Erro do vendor (antes o provedor simplesmente sumia do popup)
+                    StyledText {
+                        visible: !!providerEntry.modelData.error
+                        Layout.preferredWidth: root.contentWidth
+                        text: providerEntry.modelData.error || ""
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 3
+                        elide: Text.ElideRight
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: Appearance.colors.colError
+                    }
+
+                    StyledText {
+                        visible: !!providerEntry.modelData.note
+                        text: providerEntry.modelData.note || ""
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: Appearance.colors.colOnSurfaceVariant
                     }
 
                     // Cards Flow
                     Flow {
-                        Layout.fillWidth: true
+                        visible: (providerEntry.modelData.items || []).length > 0
+                        Layout.preferredWidth: root.contentWidth
                         spacing: 6
 
                         Repeater {

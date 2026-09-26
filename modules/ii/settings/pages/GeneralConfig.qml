@@ -107,6 +107,9 @@ ContentPage {
                             text: DateTime.longDate
                             horizontalAlignment: Text.AlignHCenter
                             font.pixelSize: 32
+                            fontSizeMode: Text.Fit
+                            minimumPixelSize: 16
+                            elide: Text.ElideRight
                             font.weight: Font.Normal
                             opacity: 0.6
                             color: Appearance.colors.colPrimary
@@ -344,7 +347,7 @@ ContentPage {
 
                 ColumnLayout {
                     id: translationCol
-                    anchors { fill: parent; margins: 0 }
+                    Layout.fillWidth: true
                     spacing: 8
 
                     ConfigTextArea {

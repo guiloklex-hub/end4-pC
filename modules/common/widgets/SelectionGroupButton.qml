@@ -22,6 +22,7 @@ GroupButton {
 
     horizontalPadding: 8
     verticalPadding: 6
+    baseHeight: Math.max(38, (contentItem ? contentItem.implicitHeight : 0) + verticalPadding * 2)
 
     colBackground: Appearance.colors.colSecondaryContainer
     colBackgroundHover: Appearance.colors.colSecondaryContainerHover

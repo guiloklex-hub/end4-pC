@@ -12,7 +12,7 @@ RippleButton {
 
     Layout.fillWidth: true
     Layout.bottomMargin: 6 //Visually it works and I don't know why this should be handled by the parent.
-    implicitHeight: contentItem.implicitHeight + 8 
+    implicitHeight: Math.max(38, contentItem.implicitHeight + 8)
     font.pixelSize: Appearance.font.pixelSize.small
     
     onClicked: checked = !checked
@@ -32,6 +32,8 @@ RippleButton {
             font: root.font
             color: Appearance.colors.colOnSecondaryContainer
             opacity: root.enabled ? 1 : 0.4
+            elide: Text.ElideRight
+            maximumLineCount: 1
         }
         StyledSwitch {
             id: switchWidget

@@ -9,7 +9,7 @@ import QtQuick.Controls
 SpinBox {
     id: root
 
-    property real baseHeight: 35
+    property real baseHeight: 38
     property real radius: Appearance.rounding.small
     property real innerButtonRadius: Appearance.rounding.unsharpen
     editable: true

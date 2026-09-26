@@ -1,0 +1,9 @@
+
+# Local agenda configuration
+scripts/agenda/calendars.json
+*.ics
+
+
+# Python
+__pycache__/
+*.pyc

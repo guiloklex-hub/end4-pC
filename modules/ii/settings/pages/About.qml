@@ -11,7 +11,6 @@ import qs.modules.common.functions
 
 ContentPage {
     forceWidth: true
-    bottomContentPadding: 35
     property bool isMinimal: Config.options.settings.style === "minimal"
 
     function runSystemUpdate() {

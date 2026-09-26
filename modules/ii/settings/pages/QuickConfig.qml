@@ -15,7 +15,6 @@ ContentPage {
     property bool isMinimal: Config.options.settings.style === "minimal"
     forceWidth: false
     baseWidth: !isMinimal ? 920 : 760
-    bottomContentPadding: 35
 
     function goTo(term) {
         const t = term.toLowerCase().trim()
@@ -414,7 +413,7 @@ ContentPage {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: screenRoundCol.implicitHeight + 24
+                    Layout.preferredHeight: groupStyleCol.implicitHeight + 24
                     radius: Appearance.rounding.normal
                     color: Appearance.colors.colLayer1
                     ColumnLayout {
@@ -455,7 +454,7 @@ ContentPage {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: groupStyleCol.implicitHeight + 24
+                    Layout.preferredHeight: screenRoundCol.implicitHeight + 24
                     radius: Appearance.rounding.normal
                     color: Appearance.colors.colLayer1
 

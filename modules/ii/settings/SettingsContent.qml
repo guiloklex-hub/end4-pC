@@ -27,7 +27,11 @@ Item {
             let pageName = parts[0];
             let searchTerm = parts.length > 1 ? parts[1] : "";
 
-            const idx = root.pages.findIndex(p => p.name.toLowerCase() === pageName.toLowerCase());
+            const targetKey = pageName.toLowerCase();
+            const idx = root.pages.findIndex(p =>
+                (p.id && p.id.toLowerCase() === targetKey) ||
+                (p.name && p.name.toLowerCase() === targetKey)
+            );
             
             if (idx >= 0) {
                 root.currentPage = idx;
@@ -60,20 +64,24 @@ Item {
     
     property var pages: {
         let list = [
-            { name: Translation.tr("Quick"),      icon: "instant_mix",    component: Qt.resolvedUrl("pages/QuickConfig.qml") },
-            { name: Translation.tr("General"),    icon: "browse",         component: Qt.resolvedUrl("pages/GeneralConfig.qml") },
-            { name: Translation.tr("Bar"),        icon: "toast",          iconRotation: 180, component: Qt.resolvedUrl("pages/BarConfig.qml") },
-            { name: Translation.tr("Desktop"),    icon: "texture",        component: Qt.resolvedUrl("pages/BackgroundConfig.qml") },
-            { name: Translation.tr("Interface"),  icon: "bottom_app_bar", component: Qt.resolvedUrl("pages/InterfaceConfig.qml") },
-            { name: Translation.tr("Services"),   icon: "settings",       component: Qt.resolvedUrl("pages/ServicesConfig.qml") },
+            { id: "Quick",        name: Translation.tr("Quick"),      icon: "instant_mix",    component: Qt.resolvedUrl("pages/QuickConfig.qml") },
+            { id: "Network",      name: Translation.tr("Network"),    icon: "wifi",           component: Qt.resolvedUrl("pages/NetworkConfig.qml") },
+            { id: "Bluetooth",    name: Translation.tr("Bluetooth"),  icon: "bluetooth",      component: Qt.resolvedUrl("pages/BluetoothConfig.qml") },
+            { id: "Audio",        name: Translation.tr("Audio"),      icon: "volume_up",      component: Qt.resolvedUrl("pages/AudioConfig.qml") },
+            { id: "General",      name: Translation.tr("General"),    icon: "browse",         component: Qt.resolvedUrl("pages/GeneralConfig.qml") },
+            { id: "Bar",          name: Translation.tr("Bar"),        icon: "toast",          iconRotation: 180, component: Qt.resolvedUrl("pages/BarConfig.qml") },
+            { id: "Desktop",      name: Translation.tr("Desktop"),    icon: "texture",        component: Qt.resolvedUrl("pages/BackgroundConfig.qml") },
+            { id: "Interface",    name: Translation.tr("Interface"),  icon: "bottom_app_bar", component: Qt.resolvedUrl("pages/InterfaceConfig.qml") },
+            { id: "Services",     name: Translation.tr("Services"),   icon: "settings",       component: Qt.resolvedUrl("pages/ServicesConfig.qml") },
+            { id: "System",       name: Translation.tr("System"),     icon: "memory",         component: Qt.resolvedUrl("pages/SystemToolsConfig.qml") },
         ]
         if (WM.compositor === "hyprland") {
-                    list.push({ name: Translation.tr("Hyprland"), icon: "select_window_2", component: Qt.resolvedUrl("pages/HyprlandConfig.qml") })
-                }
+            list.push({ id: "Hyprland", name: Translation.tr("Hyprland"), icon: "select_window_2", component: Qt.resolvedUrl("pages/HyprlandConfig.qml") })
+        }
         if (WM.compositor === "niri") {
-                    list.push({ name: Translation.tr("Niri"), icon: "select_window_2", component: Qt.resolvedUrl("pages/NiriConfig.qml") })
-                }
-        list.push({ name: Translation.tr("About"), icon: "info", component: Qt.resolvedUrl("pages/About.qml") })
+            list.push({ id: "Niri", name: Translation.tr("Niri"), icon: "select_window_2", component: Qt.resolvedUrl("pages/NiriConfig.qml") })
+        }
+        list.push({ id: "About", name: Translation.tr("About"), icon: "info", component: Qt.resolvedUrl("pages/About.qml") })
         return list
     }
 
@@ -115,7 +123,7 @@ Item {
                     id: navRail
                     anchors { left: parent.left; top: parent.top; bottom: parent.bottom; leftMargin: 20 }
                     spacing: 10
-                    expanded: root.width > 900
+                    expanded: root.width > 1050
 
                     RowLayout {
                         visible: true

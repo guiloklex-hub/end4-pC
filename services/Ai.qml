@@ -235,7 +235,7 @@ Singleton {
             "none": [],
         }
     }
-    property list<var> availableTools: Object.keys(root.tools[models[currentModelId]?.api_format])
+    property list<var> availableTools: Object.keys(root.tools[models[currentModelId]?.api_format || "openai"] ?? {})
     property var toolDescriptions: {
         "functions": Translation.tr("Commands, edit configs, search.\nTakes an extra turn to switch to search mode if that's needed"),
         "search": Translation.tr("Gives the model search capabilities (immediately)"),
@@ -310,6 +310,7 @@ Singleton {
             const safeModelName = root.safeModelName(model["model"]);
             root.addModel(safeModelName, model)
         });
+        root.modelList = Object.keys(root.models);
     }
 
     Connections {
@@ -324,8 +325,8 @@ Singleton {
     property string pendingFilePath: ""
 
     Component.onCompleted: {
+        root.addUserModels() // Load user models first so currentModelId can find extra models
         setModel(currentModelId, false, false); // Do necessary setup for model
-        root.addUserModels() // Config onReadyChanged above might not fire if config is loaded before this service
     }
 
     function guessModelLogo(model) {
@@ -480,7 +481,7 @@ Singleton {
     }
 
     function getModel() {
-        return models[currentModelId];
+        return models[currentModelId] ?? models[modelList[0]] ?? ({ "name": "AI", "description": "" });
     }
 
     function setModel(modelId, feedback = true, setPersistentState = true) {

@@ -149,6 +149,9 @@ Singleton {
     Process {
         id: rescanProcess
         command: ["nmcli", "dev", "wifi", "list", "--rescan", "yes"]
+        onExited: (code) => {
+            root.wifiScanning = false;
+        }
         stdout: SplitParser {
             onRead: {
                 wifiScanning = false;

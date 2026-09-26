@@ -17,7 +17,7 @@ RippleButton {
             color: Appearance.colors.colOnSecondaryContainer
         }
     }
-    implicitHeight: 35
+    implicitHeight: 38
     horizontalPadding: 10
     buttonRadius: Appearance.rounding.small
     colBackground: Appearance.colors.colLayer2

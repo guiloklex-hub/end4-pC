@@ -1,0 +1,26 @@
+{
+  "refresh_interval_minutes": 15,
+  "window_days_past": 1,
+  "window_days_future": 30,
+  "timezone": "America/Sao_Paulo",
+  "calendars": [
+    {
+      "id": "calendar_1",
+      "name": "Exemplo Agenda 1",
+      "color": "#F06292",
+      "colorContainer": "#3B1824",
+      "onColorContainer": "#FFD9E2",
+      "url": "https://calendar.google.com/calendar/ical/example1/basic.ics",
+      "enabled": true
+    },
+    {
+      "id": "calendar_2",
+      "name": "Exemplo Agenda 2",
+      "color": "#81C784",
+      "colorContainer": "#1B3520",
+      "onColorContainer": "#C8E6C9",
+      "url": "https://calendar.google.com/calendar/ical/example2/basic.ics",
+      "enabled": true
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import qs.modules.common
 import qs.modules.common.widgets
+import qs.modules.common.functions
 import qs.services
 import qs
 import QtQuick
@@ -15,14 +16,17 @@ MouseArea {
     property color pillContentColor: Appearance.colors.colOnLayer1
     property bool borderless: Config.options.bar.borderless
 
+    // Placeholder neutro até o primeiro fetch (antes mostrava um "48%" fictício).
     property var aiData: ({
-        primary: { text: "48%", class: "low", vendor: "anthropic" },
-        topPct: 48,
-        topLabel: "Claude Pro",
+        primary: { text: "…", class: "low", vendor: "none", icon: "neurology" },
+        topPct: 0,
+        topLabel: "",
         topReset: "",
         providers: [],
-        totalConfigured: 5
+        totalConfigured: 0,
+        errorCount: 0
     })
+    readonly property string vendorIcon: aiData?.primary?.icon || "neurology"
 
     implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : Math.max(54, contentRow.implicitWidth + 14)
     implicitHeight: vertical ? Math.max(34, contentRow.implicitHeight + 14) : Appearance.sizes.barHeight
@@ -97,13 +101,13 @@ MouseArea {
     readonly property string usageClass: root.aiData?.primary?.class ?? "low"
     function getUsageColor() {
         if (usageClass === "critical") return Appearance.colors.colError;
-        if (usageClass === "mid" || usageClass === "warning")
+        if (usageClass === "mid" || usageClass === "high" || usageClass === "warning")
             return Appearance.m3colors.darkmode ? "#FFB84D" : "#9A5B00";
         return Appearance.colors.colPrimary;
     }
     function getUsageIconColor() {
         if (usageClass === "critical") return Appearance.m3colors.m3onError;
-        if (usageClass === "mid" || usageClass === "warning")
+        if (usageClass === "mid" || usageClass === "high" || usageClass === "warning")
             return Appearance.m3colors.darkmode ? "#3D2400" : "#FFFFFF";
         return Appearance.colors.colOnPrimary;
     }
@@ -124,7 +128,7 @@ MouseArea {
 
             MaterialSymbol {
                 anchors.centerIn: parent
-                text: "neurology"
+                text: root.vendorIcon
                 iconSize: 14
                 color: root.getUsageIconColor()
             }
@@ -133,7 +137,7 @@ MouseArea {
         MaterialSymbol {
             visible: !root.isMaterial
             Layout.alignment: Qt.AlignVCenter
-            text: "neurology"
+            text: root.vendorIcon
             iconSize: Appearance.font.pixelSize.normal
             color: root.getUsageColor()
         }

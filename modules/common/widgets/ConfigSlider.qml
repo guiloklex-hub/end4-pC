@@ -19,6 +19,7 @@ RowLayout {
     property real to: slider.to
     property real textWidth: 120
     property bool showLabel: true
+    signal moved(real value)
 
     RowLayout {
         id: row
@@ -35,6 +36,8 @@ RowLayout {
             Layout.preferredWidth: root.textWidth
             text: root.text
             color: Appearance.colors.colOnSecondaryContainer
+            elide: Text.ElideRight
+            maximumLineCount: 1
         }
     }
     StyledSlider {
@@ -44,5 +47,6 @@ RowLayout {
         value: root.value
         from: root.from
         to: root.to
+        onMoved: root.moved(value)
     }
 }

@@ -1,6 +1,6 @@
 [general]
 mode = waves
-framerate = 60
+framerate = 45
 autosens = 1
 bars = 50
 

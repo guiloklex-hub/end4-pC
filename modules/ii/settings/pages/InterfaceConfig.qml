@@ -73,6 +73,30 @@ ContentPage {
                         Config.options.settings.borderColor = newValue
                     }
                 }
+                ConfigSlider {
+                    text: Translation.tr("Window width")
+                    buttonIcon: "width_full"
+                    value: Config.options.settings.customWidth || 1600
+                    from: 900
+                    to: 1850
+                    stopIndicatorValues: [1200, 1600]
+                    usePercentTooltip: false
+                    onMoved: (newValue) => {
+                        Config.options.settings.customWidth = newValue
+                    }
+                }
+                ConfigSlider {
+                    text: Translation.tr("Window height")
+                    buttonIcon: "height"
+                    value: Config.options.settings.customHeight || 1000
+                    from: 600
+                    to: 1120
+                    stopIndicatorValues: [780, 1000]
+                    usePercentTooltip: false
+                    onMoved: (newValue) => {
+                        Config.options.settings.customHeight = newValue
+                    }
+                }
             } 
         }
 
@@ -803,7 +827,7 @@ ContentPage {
                     ConfigTextArea {
                         id: floatingImageSourceField
                         Layout.fillWidth: true
-                        fieldWidth: 430
+                        fieldWidth: Math.min(430, page.width * 0.45)
                         buttonIcon: "imagesmode"
                         text: Translation.tr("Image source")
                         value: Config.options.overlay.floatingImage.imageSource
@@ -1085,7 +1109,7 @@ ContentPage {
                     buttonIcon: "folder"
                     text: Translation.tr("Custom Wallpaper Folder")
                     placeholderText: Translation.tr("e.g., /home/user/Pictures")
-                    fieldWidth: 300
+                    fieldWidth: Math.min(300, page.width * 0.45)
                     value: Config.options.wallpaperSelector.userPath ?? ""
 
                     onValueChanged: {
@@ -1107,7 +1131,7 @@ ContentPage {
                     buttonIcon: "video_template"
                     text: Translation.tr("Live Wallpaper Folder")
                     placeholderText: Translation.tr("e.g., /home/user/Videos/Wallpapers")
-                    fieldWidth: 300
+                    fieldWidth: Math.min(300, page.width * 0.45)
                     value: Config.options.wallpaperSelector.liveWallpapersPath ?? ""
 
                     onValueChanged: {

@@ -50,20 +50,24 @@ Singleton {
 
     // Controls
     function toggleMute() {
+        if (!Audio.sink || !Audio.sink.audio) return;
         Audio.sink.audio.muted = !Audio.sink.audio.muted
     }
 
     function toggleMicMute() {
+        if (!Audio.source || !Audio.source.audio) return;
         Audio.source.audio.muted = !Audio.source.audio.muted
     }
 
     function incrementVolume() {
+        if (!Audio.sink || !Audio.sink.audio) return;
         const currentVolume = Audio.value;
         const step = currentVolume < 0.1 ? 0.01 : 0.02 || 0.2;
         Audio.sink.audio.volume = Math.min(1, Audio.sink.audio.volume + step);
     }
     
     function decrementVolume() {
+        if (!Audio.sink || !Audio.sink.audio) return;
         const currentVolume = Audio.value;
         const step = currentVolume < 0.1 ? 0.01 : 0.02 || 0.2;
         Audio.sink.audio.volume -= step;

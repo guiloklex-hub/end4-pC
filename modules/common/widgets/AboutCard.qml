@@ -24,7 +24,9 @@ Rectangle {
     implicitWidth: 260
     implicitHeight: 80
     radius: Appearance.rounding.large 
-    color: root.cardBgColor
+    color: (root.clickAction && cardMouseArea.containsPress) ? Appearance.colors.colLayer1Active :
+           ((root.clickAction && cardMouseArea.containsMouse) ? Appearance.colors.colLayer1Hover : root.cardBgColor)
+    Behavior on color { ColorAnimation { duration: 150 } }
     border.width: 0
 
     RowLayout {
@@ -70,8 +72,10 @@ Rectangle {
     }
 
     MouseArea {
+        id: cardMouseArea
         anchors.fill: parent
         enabled: root.clickAction !== null
+        hoverEnabled: true
         cursorShape: root.clickAction !== null ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
             if (root.clickAction) root.clickAction();

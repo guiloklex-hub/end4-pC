@@ -97,7 +97,7 @@ ContentPage {
                     Rectangle {
                         id: allRow
                         Layout.fillWidth: true
-                        implicitHeight: allSwitchItem.implicitHeight + 16 + 8
+                        implicitHeight: allSwitchItem.implicitHeight + 16
                         color: Appearance.colors.colLayer1
                         topLeftRadius: Appearance.rounding.normal
                         topRightRadius: Appearance.rounding.normal
@@ -131,7 +131,7 @@ ContentPage {
                             readonly property bool isLast: index === Hyprland.monitors.values.length - 1
 
                             Layout.fillWidth: true
-                            implicitHeight: switchItem.implicitHeight + 16 + 8
+                            implicitHeight: switchItem.implicitHeight + 16
                             color: Appearance.colors.colLayer1
                             topLeftRadius:     Appearance.rounding.unsharpenmore
                             topRightRadius:    Appearance.rounding.unsharpenmore

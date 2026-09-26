@@ -85,14 +85,18 @@ Singleton {
     property var settingsKeywordsCache: ({})
 
     property var settingsIndex: [
-        { page: "General",   path: "GeneralConfig.qml" },
-        { page: "Bar",       path: "BarConfig.qml" },
-        { page: "Desktop",   path: "BackgroundConfig.qml" },
-        { page: "Interface", path: "InterfaceConfig.qml" },
-        { page: "Services",  path: "ServicesConfig.qml" },
-        { page: "Hyprland",  path: "HyprlandConfig.qml" },
-        { page: "About",     path: "About.qml" },
-        { page: "Quick",     path: "QuickConfig.qml" },
+        { page: "Quick",     name: Translation.tr("Quick"),     path: "QuickConfig.qml",       aliases: ["rápido", "atalhos"] },
+        { page: "Network",   name: Translation.tr("Network"),   path: "NetworkConfig.qml",     aliases: ["rede", "wifi", "internet", "ethernet", "vpn"] },
+        { page: "Bluetooth", name: Translation.tr("Bluetooth"), path: "BluetoothConfig.qml",   aliases: ["bt"] },
+        { page: "Audio",     name: Translation.tr("Audio"),     path: "AudioConfig.qml",       aliases: ["som", "áudio", "volume", "mic"] },
+        { page: "General",   name: Translation.tr("General"),   path: "GeneralConfig.qml",     aliases: ["geral"] },
+        { page: "Bar",       name: Translation.tr("Bar"),       path: "BarConfig.qml",         aliases: ["barra", "dock"] },
+        { page: "Desktop",   name: Translation.tr("Desktop"),   path: "BackgroundConfig.qml",  aliases: ["papel de parede", "wallpaper"] },
+        { page: "Interface", name: Translation.tr("Interface"), path: "InterfaceConfig.qml",   aliases: ["aparência", "interface", "tema"] },
+        { page: "Services",  name: Translation.tr("Services"),  path: "ServicesConfig.qml",    aliases: ["serviços"] },
+        { page: "System",    name: Translation.tr("System"),    path: "SystemToolsConfig.qml", aliases: ["sistema", "hardware", "kernel", "cachyos", "btrfs"] },
+        { page: "Hyprland",  name: Translation.tr("Hyprland"),  path: "HyprlandConfig.qml",    aliases: ["compositor"] },
+        { page: "About",     name: Translation.tr("About"),     path: "About.qml",             aliases: ["sobre"] },
     ]
 
     // Load user action scripts from ~/.config/illogical-impulse/actions/
@@ -413,17 +417,20 @@ Singleton {
             });
         });
         ////////////////// Settings search //////////////////
-        const settingsQuery = root.query.toLowerCase().trim();
-
         const settingsResults = root.settingsIndex.reduce((acc, page) => {
             const dynamicKeywords = (root.settingsKeywordsCache[page.page] || "").toLowerCase();
             const query = root.query.toLowerCase().trim();
             if (query === "") return acc;
 
-            if (page.page.toLowerCase().includes(query) || dynamicKeywords.includes(query)) {
+            const pageTranslatedName = (page.name || page.page).toLowerCase();
+            const aliases = (page.aliases || []).map(a => a.toLowerCase());
+            const matchesAlias = aliases.some(a => a.includes(query));
+            if (page.page.toLowerCase().includes(query) || pageTranslatedName.includes(query) || matchesAlias || dynamicKeywords.includes(query)) {
                 acc.push(resultComp.createObject(null, {
-                    name: page.page,
-                    comment: dynamicKeywords.includes(query) ? "Section: " + query : "Settings for " + page.page,
+                    name: page.name || page.page,
+                    comment: dynamicKeywords.includes(query)
+                        ? Translation.tr("Section: %1").arg(query)
+                        : Translation.tr("Settings for %1").arg(page.name || page.page),
                     verb: Translation.tr("Go"),
                     type: Translation.tr("Settings"),
                     iconName: "settings",

@@ -21,7 +21,7 @@ Button {
     property var middleClickAction // When middle clicking
     property bool bounce: true
     property real baseWidth: contentItem.implicitWidth + horizontalPadding * 2
-    property real baseHeight: contentItem.implicitHeight + verticalPadding * 2
+    property real baseHeight: Math.max(38, (contentItem ? contentItem.implicitHeight : 0) + verticalPadding * 2)
     property bool enableImplicitWidthAnimation: true
     property bool enableImplicitHeightAnimation: true
     property real clickedWidth: baseWidth + (isAtSide ? 10 : 20)

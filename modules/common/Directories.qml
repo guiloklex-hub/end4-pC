@@ -34,6 +34,9 @@ Singleton {
     property string shellConfigName: "config.json"
     property string shellConfigPath: `${Directories.shellConfig}/${Directories.shellConfigName}`
 	property string todoPath: FileUtils.trimFileProtocol(`${Directories.state}/user/todo.json`)
+    property string agendaPath: FileUtils.trimFileProtocol(`${Directories.state}/user/agenda_cache.json`)
+    property string agendaConfigPath: FileUtils.trimFileProtocol(`${Directories.state}/user/agenda_calendars.json`)
+    property string agendaSyncScript: FileUtils.trimFileProtocol(`${Directories.scriptPath}/agenda/sync_agenda.py`)
 	property string notesPath: FileUtils.trimFileProtocol(`${Directories.state}/user/notes.txt`)
     property string desktopNotesPath: FileUtils.trimFileProtocol(`${Directories.state}/user/desktopnotes.txt`)
 	property string conflictCachePath: FileUtils.trimFileProtocol(`${Directories.cache}/conflict-killer`)
