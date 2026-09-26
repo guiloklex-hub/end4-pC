@@ -1,19 +1,39 @@
-
-
-
-
 <div align="center">
 
-# 💠 end4-pC
+# 💠 end4-pC · guiloklex-hub edition
 
-**A personal fork of [illogical-impulse](https://github.com/end-4/dots-hyprland) by [@end-4](https://github.com/end-4)**  
-Customized and maintained by **pctrade**
+**A fork of [pctrade/end4-pC](https://github.com/pctrade/end4-pC)**, which is itself a fork of [illogical-impulse](https://github.com/end-4/dots-hyprland) by [@end-4](https://github.com/end-4)
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+[English](README.md) | [Português (Brasil)](README.pt-BR.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
 </div>
 
+> [!TIP]
+> **Want the whole desktop?** This repository is the Quickshell shell only. The Hyprland config, the installer and the guides that go with it live in **[hyprland-m3-desktop](https://github.com/guiloklex-hub/hyprland-m3-desktop)**.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/guiloklex-hub/hyprland-m3-desktop/main/screenshots/desktop.jpg" alt="Desktop with bar, widgets and dock" width="85%"/>
+</p>
+
+## ✨ What this fork adds
+
+- **Dock** — running/focused indicators, live window previews on hover, right-click menu (window list, new window, pin/unpin, close), mouse wheel cycles windows, and each monitor lists only its own windows.
+- **App drawer** (`Super+Space` or the dock button) — search, pinned and recent apps, categories, drag an app to the dock to pin it; right-click to hide, rename, change the icon, see details or uninstall; install from the repos, AUR or Flathub.
+- **Bar** — readable pills (text paired with each pill color), resource values with temperature warning, AI usage quotas (`ai-usagebar`), battery details; popups stay open while hovered.
+- **Desktop widgets** — readable cards, a two-column layout that leaves the wallpaper free, shown only on the monitors you choose, media card hides when nothing plays.
+- **Settings panel** (`Super+Z`) — reorganized Hyprland page (displays with a 15 s keep/revert confirmation, valid scales only, keyboard presets, mouse/touchpad in %), plus new Network, Bluetooth, Audio and System pages.
+- **Lock screen** — clock and date, fingerprint keeps listening after a failed read and shakes on an unknown finger.
+- **Brightness** — external monitors through DDC/CI, and the laptop backlight turns fully off at 0%.
+- **Google Calendar agenda** (read-only, secret iCal links) and a complete **Brazilian Portuguese** translation.
+- Fixes: GUI apps launched through UWSM, safer media artwork download, monitor config kept when a screen is unplugged, and more — see the commit history.
+
+This fork branched from pctrade/end4-pC at [`979ff0a`](https://github.com/pctrade/end4-pC/commit/979ff0a). Upstream changes after that point are not merged yet.
+
 ---
+
+## 📄 Original README (pctrade)
+
+> The instructions below come from pctrade's repository and install **pctrade's** version. To install this fork, use [hyprland-m3-desktop](https://github.com/guiloklex-hub/hyprland-m3-desktop).
 
 ## 🎬 Showcase
 
