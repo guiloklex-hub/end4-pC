@@ -383,7 +383,7 @@ MouseArea {
             Layout.leftMargin: 8
             icon: "account_circle"
             visible: !Config.options.lock.showMedia || root.activePlayer === null
-            text: SystemInfo.username
+            text: Config.options.profile.displayName === "" ? SystemInfo.username : Config.options.profile.displayName
         }
 
         // Media player info 
