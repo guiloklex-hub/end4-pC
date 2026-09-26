@@ -43,8 +43,11 @@ Singleton {
     function decreaseBrightness(): void {
         const focusedName = Hyprland.focusedMonitor.name;
         const monitor = monitors.find(m => focusedName === m.screen.name);
-        if (monitor && monitor.brightness > 0) 
+        if (monitor && monitor.brightness > 0)
             monitor.setBrightness(monitor.brightness - 0.05);
+        // Backlight at 0 is already off; gamma would do nothing visible
+        else if (monitor && !monitor.isDdc)
+            return;
         // if brightness is 0, then decrease gamma
         else {
             Hyprsunset.setGamma(Hyprsunset.gamma - 5);
@@ -171,7 +174,10 @@ Singleton {
             } else {
                 const valuePercentNumber = Math.floor(brightnessValue * 100);
                 let valuePercent = `${valuePercentNumber}%`;
-                if (valuePercentNumber == 0) valuePercent = "1"; // Prevent fully black
+                // Only an explicit 0 turns the backlight off (screen dark while something runs);
+                // anything the anti-flashbang multiplier rounds down to 0 stays barely lit.
+                if (monitor.brightness <= 0.001) valuePercent = "0";
+                else if (valuePercentNumber == 0) valuePercent = "1";
                 setProc.exec(["brightnessctl", "--class", "backlight", "s", valuePercent, "--quiet"])
             }
         }
