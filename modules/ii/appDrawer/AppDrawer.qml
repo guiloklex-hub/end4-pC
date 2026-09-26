@@ -606,14 +606,17 @@ Scope {
                             color: Appearance.colors.colLayer1
                             Image {
                                 anchors.fill: parent
-                                source: SystemInfo.username !== "user" ? `file://${Directories.userAvatarPathAccountsService}` : ""
+                                // Same profile as the desktop user card and the settings header
+                                source: Config.options.profile.avatarPicture !== ""
+                                    ? "file://" + Config.options.profile.avatarPicture
+                                    : SystemInfo.username !== "user" ? `file://${Directories.userAvatarPathAccountsService}` : ""
                                 fillMode: Image.PreserveAspectCrop
                                 sourceSize: Qt.size(68, 68)
                                 asynchronous: true
                             }
                         }
                         StyledText {
-                            text: SystemInfo.username
+                            text: Config.options.profile.displayName === "" ? SystemInfo.username : Config.options.profile.displayName
                             color: Appearance.colors.colOnLayer0
                         }
                         Item { Layout.fillWidth: true }
