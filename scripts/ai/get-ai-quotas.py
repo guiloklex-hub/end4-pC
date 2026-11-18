@@ -11,6 +11,8 @@ import os
 import re
 import subprocess
 import tomllib
+import urllib.parse
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -19,7 +21,7 @@ CACHE_DIR = os.path.expanduser('~/.cache/ai-usagebar')
 
 VENDOR_ICONS = {
     'anthropic': 'psychology',
-    'anthropic_api': 'psychology',
+    'anthropic_api': 'payments',
     'openai': 'smart_toy',
     'copilot': 'smart_toy',
     'opencode-go': 'code',
@@ -39,6 +41,8 @@ LABEL_ALIASES = {
 # Nome exibido quando o plano não diz qual modelo é.
 NAME_OVERRIDES = {
     'antigravity': 'Antigravity (Gemini)',
+    # A API /zen/go/v1/usage só devolve percentuais, não o tier (Go ou Go Plus).
+    'opencode-go': 'OpenCode Go Plus',
 }
 
 SEVERITY_RANK = {'low': 0, 'mid': 1, 'warning': 1, 'high': 2, 'critical': 3}
@@ -206,20 +210,212 @@ def primary_from(provider):
     return {**base, 'text': text, 'class': worst}
 
 
+def format_reset_in(reset_iso, now):
+    if not reset_iso:
+        return ''
+    try:
+        secs = max(0, int((datetime.fromisoformat(reset_iso) - now).total_seconds()))
+    except Exception:
+        return ''
+    d, h, m = secs // 86400, secs % 86400 // 3600, secs % 3600 // 60
+    return 'Resets in ' + (f'{d}d {h}h' if d else f'{h}h {m:02d}m')
+
+
+def pct_severity(pct):
+    return 'critical' if pct >= 90 else 'high' if pct >= 75 else 'mid' if pct >= 50 else 'low'
+
+
+def get_antigravity_access_token():
+    raw = ''
+    try:
+        res = subprocess.run(['secret-tool', 'lookup', 'service', 'gemini', 'username', 'antigravity'],
+                             capture_output=True, text=True, timeout=3)
+        raw = res.stdout.strip()
+    except Exception:
+        pass
+    if not raw:
+        try:
+            with open(os.path.expanduser('~/.gemini/antigravity-cli/antigravity-oauth-token')) as f:
+                raw = f.read().strip()
+        except Exception:
+            return None
+
+    data = json.loads(raw)
+    tok = data.get('token', data)
+    if isinstance(tok, str):
+        tok = json.loads(tok)
+
+    access_token = tok.get('access_token')
+    expiry_str = tok.get('expiry')
+    refresh_token = tok.get('refresh_token')
+
+    need_refresh = False
+    if expiry_str:
+        try:
+            exp = datetime.fromisoformat(expiry_str)
+            if (exp - datetime.now(timezone.utc)).total_seconds() < 60:
+                need_refresh = True
+        except Exception:
+            pass
+
+    if need_refresh and refresh_token:
+        try:
+            with open(os.path.join(CONFIG_DIR, 'config.toml'), 'rb') as f:
+                agy_cfg = tomllib.load(f).get('antigravity', {})
+            cid = agy_cfg.get('oauth_client_id')
+            sec = agy_cfg.get('oauth_client_secret')
+            if cid and sec:
+                body = urllib.parse.urlencode({
+                    'client_id': cid,
+                    'client_secret': sec,
+                    'refresh_token': refresh_token,
+                    'grant_type': 'refresh_token',
+                }).encode()
+                req = urllib.request.Request('https://oauth2.googleapis.com/token', data=body, method='POST')
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    refreshed = json.loads(resp.read().decode())
+                    if refreshed.get('access_token'):
+                        access_token = refreshed['access_token']
+        except Exception:
+            pass
+
+    return access_token
+
+
+def fetch_antigravity_gemini():
+    """Consulta o endpoint de produção cloudcode-pa para obter os buckets do Gemini
+    que o endpoint daily-cloudcode-pa (usado pelo ai-usagebar) omite."""
+    agy_cache_dir = os.path.join(CACHE_DIR, 'antigravity')
+    prod_cache_path = os.path.join(agy_cache_dir, 'prod_quota.json')
+    now_ts = datetime.now(timezone.utc).timestamp()
+
+    try:
+        if os.path.exists(prod_cache_path) and (now_ts - os.path.getmtime(prod_cache_path)) < 50:
+            with open(prod_cache_path) as f:
+                return json.load(f)
+    except Exception:
+        pass
+
+    try:
+        token = get_antigravity_access_token()
+        if not token:
+            return None
+        req = urllib.request.Request(
+            'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary',
+            data=b'{}',
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+                'User-Agent': 'antigravity',
+            },
+            method='POST',
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            summary = json.loads(resp.read().decode())
+
+        result = {}
+        for grp in summary.get('groups', []):
+            gname = grp.get('displayName', '')
+            is_gemini = 'Gemini' in gname
+            prefix = 'gemini' if is_gemini else 'tp'
+            for b in grp.get('buckets', []):
+                win = b.get('window')
+                rem = b.get('remainingFraction')
+                if rem is None:
+                    continue
+                used_pct = max(0, min(100, round((1.0 - float(rem)) * 100)))
+                reset_time = b.get('resetTime')
+                if win == '5h':
+                    result[f'{prefix}_5h_pct'] = used_pct
+                    result[f'{prefix}_5h_reset'] = reset_time
+                elif win == 'weekly':
+                    result[f'{prefix}_weekly_pct'] = used_pct
+                    result[f'{prefix}_weekly_reset'] = reset_time
+
+        if result:
+            os.makedirs(agy_cache_dir, exist_ok=True)
+            with open(prod_cache_path, 'w') as f:
+                json.dump(result, f)
+        return result
+    except Exception:
+        return None
+
+
+def enrich_antigravity_entry(doc, agy_gemini):
+    if not agy_gemini or 'gemini_5h_pct' not in agy_gemini:
+        return
+
+    # Atualiza também o cache do ai-usagebar para que chamadas subsequentes / TUI vejam o Gemini.
+    usage_cache_path = os.path.join(CACHE_DIR, 'antigravity', 'usage.json')
+    try:
+        if os.path.exists(usage_cache_path):
+            with open(usage_cache_path) as f:
+                uc = json.load(f)
+            uc['session_pct'] = agy_gemini.get('gemini_5h_pct')
+            uc['session_reset'] = agy_gemini.get('gemini_5h_reset')
+            uc['weekly_pct'] = agy_gemini.get('gemini_weekly_pct')
+            uc['weekly_reset'] = agy_gemini.get('gemini_weekly_reset')
+            with open(usage_cache_path, 'w') as f:
+                json.dump(uc, f)
+    except Exception:
+        pass
+
+    now = datetime.now(timezone.utc)
+    for entry in doc.get('entries', []):
+        if entry.get('id') != 'antigravity':
+            continue
+        metrics = entry.get('metrics') or []
+        if any(m.get('label') == 'Gemini' for m in metrics):
+            break
+
+        g5_pct = agy_gemini.get('gemini_5h_pct', 0)
+        g5_rst = agy_gemini.get('gemini_5h_reset')
+        gw_pct = agy_gemini.get('gemini_weekly_pct', 0)
+        gw_rst = agy_gemini.get('gemini_weekly_reset')
+
+        g5_metric = {
+            'label': 'Gemini',
+            'percent': g5_pct,
+            'value': f'{g5_pct}%',
+            'severity': pct_severity(g5_pct),
+            'reset_at': g5_rst,
+            'detail': format_reset_in(g5_rst, now),
+            'window_secs': 18000,
+        }
+        gw_metric = {
+            'label': 'Gemini',
+            'percent': gw_pct,
+            'value': f'{gw_pct}%',
+            'severity': pct_severity(gw_pct),
+            'reset_at': gw_rst,
+            'detail': format_reset_in(gw_rst, now),
+            'window_secs': 604800,
+        }
+
+        m_5h = [m for m in metrics if m.get('window_secs') == 18000]
+        m_7d = [m for m in metrics if m.get('window_secs') == 604800]
+        m_other = [m for m in metrics if m.get('window_secs') not in (18000, 604800)]
+        entry['metrics'] = [g5_metric] + m_5h + [gw_metric] + m_7d + m_other
+        break
+
+
 def main():
     extra_accounts = [a for a in read_json(os.path.join(CONFIG_DIR, 'extra-accounts.json'), [])
                       if a.get('api_key') and a.get('provider', 'opencode-go') == 'opencode-go']
 
-    with ThreadPoolExecutor(max_workers=1 + len(extra_accounts)) as pool:
+    with ThreadPoolExecutor(max_workers=2 + len(extra_accounts)) as pool:
         usage_future = pool.submit(fetch_usage)
+        agy_future = pool.submit(fetch_antigravity_gemini)
         extra_futures = [pool.submit(fetch_opencode_account, a) for a in extra_accounts]
         try:
             doc = usage_future.result()
             fatal = None
         except Exception as ex:
             doc, fatal = {'entries': []}, str(ex)
+        agy_gemini = agy_future.result()
         extras = [f.result() for f in extra_futures]
 
+    enrich_antigravity_entry(doc, agy_gemini)
     providers = [entry_to_provider(e) for e in doc.get('entries', [])]
 
     # Contas extras entram logo depois da conta principal do mesmo vendor.
@@ -228,7 +424,7 @@ def main():
         if idx is None:
             providers.extend(extras)
         else:
-            providers[idx]['name'] = 'OpenCode Go (Conta 1)'
+            providers[idx]['name'] += ' (Conta 1)'
             providers[idx + 1:idx + 1] = extras
 
     # Vendor com erro continua na lista (o popup mostra o erro) em vez de sumir.
@@ -253,3 +449,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

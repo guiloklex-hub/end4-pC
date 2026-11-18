@@ -156,7 +156,7 @@ StyledPopup {
                                 label: cardDelegate.modelData ? (cardDelegate.modelData.label || "") : ""
                                 iconText: {
                                     const lbl = (cardDelegate.modelData?.label || "").toLowerCase();
-                                    if (lbl.indexOf("week") !== -1) return "calendar_today";
+                                    if (lbl.indexOf("week") !== -1 || lbl.indexOf("7d") !== -1) return "calendar_today";
                                     if (lbl.indexOf("month") !== -1) return "calendar_month";
                                     if (lbl.indexOf("credit") !== -1 || lbl.indexOf("balance") !== -1) return "account_balance_wallet";
                                     return "timer";
