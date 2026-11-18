@@ -166,8 +166,21 @@ Singleton {
         wifiStatusProcess.running = true
         updateNetworkName.running = true;
         updateNetworkStrength.running = true;
+        getNetworks.running = true; // keeps `active` (and thus the bar icon) in sync after (re)connects
         updateNetworkDetails.running = true;
         updatePublicIp.running = true;
+    }
+
+    // `nmcli monitor` doesn't report signal changes, so poll while connected.
+    // `--rescan no` only reads NM's cached list (no scan, no latency spike).
+    Timer {
+        interval: 10000
+        repeat: true
+        running: root.wifiEnabled && root.wifiStatus === "connected"
+        onTriggered: {
+            getNetworks.running = true;
+            updateNetworkStrength.running = true;
+        }
     }
 
     Process {
@@ -243,7 +256,7 @@ Singleton {
     Process {
         id: updateNetworkStrength
         running: true
-        command: ["sh", "-c", "nmcli -f IN-USE,SIGNAL,SSID device wifi | awk '/^\\*/{if (NR!=1) {print $2}}'"]
+        command: ["sh", "-c", "nmcli -f IN-USE,SIGNAL,SSID device wifi list --rescan no | awk '/^\\*/{if (NR!=1) {print $2}}'"]
         stdout: SplitParser {
             onRead: data => {
                 root.networkStrength = parseInt(data);
@@ -318,7 +331,7 @@ Singleton {
     Process {
         id: getNetworks
         running: true
-        command: ["nmcli", "-g", "ACTIVE,SIGNAL,FREQ,SSID,BSSID,SECURITY", "d", "w"]
+        command: ["nmcli", "-g", "ACTIVE,SIGNAL,FREQ,SSID,BSSID,SECURITY", "d", "w", "list", "--rescan", "no"]
         environment: ({
             LANG: "C",
             LC_ALL: "C"
