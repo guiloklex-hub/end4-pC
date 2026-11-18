@@ -7,6 +7,7 @@ import qs.modules.ii.sidebarLeft.aiChat
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs as Dialogs
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
@@ -16,6 +17,13 @@ Item {
     property real padding: 4
     property var inputField: messageInputField
     property string commandPrefix: "/"
+
+    Dialogs.FileDialog {
+        id: attachmentDialog
+        title: "Anexar imagem ou PDF"
+        nameFilters: ["Imagens e PDFs (*.png *.jpg *.jpeg *.gif *.webp *.pdf)", "Todos os arquivos (*)"]
+        onAccepted: Ai.attachFile(selectedFile.toString())
+    }
 
     property var suggestionQuery: ""
     property var suggestionList: []
@@ -45,7 +53,7 @@ Item {
     property var allCommands: [
         {
             name: "attach",
-            description: Translation.tr("Attach a file. Only works with Gemini."),
+            description: "Anexar arquivo. Claude: imagens e PDFs; Gemini: arquivos.",
             execute: args => {
                 Ai.attachFile(args.join(" ").trim());
             }
@@ -198,6 +206,11 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
     ]
 
     function handleInput(inputText) {
+        if (Ai.requestActive && inputText.trim() !== "/stop") return false;
+        if (inputText.trim() === "/stop") {
+            Ai.stopResponse();
+            return true;
+        }
         if (inputText.startsWith(root.commandPrefix)) {
             // Handle special commands
             const command = inputText.split(" ")[0].substring(1);
@@ -209,11 +222,12 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                 Ai.addMessage(Translation.tr("Unknown command: ") + command, Ai.interfaceRole);
             }
         } else {
-            Ai.sendUserMessage(inputText);
+            if (!Ai.sendUserMessage(inputText)) return false;
         }
 
         // Always scroll to bottom when user sends a message
         messageListView.positionViewAtEnd();
+        return true;
     }
 
     Process {
@@ -475,7 +489,7 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
             Layout.fillWidth: true
             radius: Appearance.rounding.normal - root.padding
             color: Appearance.colors.colLayer2
-            implicitHeight: Math.max(inputFieldRowLayout.implicitHeight + inputFieldRowLayout.anchors.topMargin + commandButtonsRow.implicitHeight + commandButtonsRow.anchors.bottomMargin + spacing, 45) + (attachedFileIndicator.implicitHeight + spacing + attachedFileIndicator.anchors.topMargin)
+            implicitHeight: Math.max(inputFieldRowLayout.implicitHeight + inputFieldRowLayout.anchors.topMargin + commandButtonsRow.implicitHeight + commandButtonsRow.anchors.bottomMargin + spacing + (modelControls.visible ? modelControls.implicitHeight + 5 : 0), 45) + (attachedFileIndicator.implicitHeight + spacing + attachedFileIndicator.anchors.topMargin)
             clip: true
 
             Behavior on implicitHeight {
@@ -497,7 +511,7 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
             RowLayout { // Input field and send button
                 id: inputFieldRowLayout
                 anchors {
-                    bottom: commandButtonsRow.top
+                    bottom: modelControls.visible ? modelControls.top : commandButtonsRow.top
                     left: parent.left
                     right: parent.right
                     bottomMargin: 5
@@ -632,8 +646,7 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                         }
 
                         function accept() {
-                            root.handleInput(text);
-                            text = "";
+                            if (root.handleInput(text)) text = "";
                         }
 
                         Keys.onPressed: event => {
@@ -654,8 +667,7 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                                 } else {
                                     // Accept text
                                     const inputText = messageInputField.text;
-                                    messageInputField.clear();
-                                    root.handleInput(inputText);
+                                    if (root.handleInput(inputText)) messageInputField.clear();
                                     event.accepted = true;
                                 }
                             } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_V) {
@@ -684,7 +696,10 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                                 event.accepted = false; // No image, let text pasting proceed
                             } else if (event.key === Qt.Key_Escape) {
                                 // Esc to detach file
-                                if (Ai.pendingFilePath.length > 0) {
+                                if (Ai.requestActive) {
+                                    Ai.stopResponse();
+                                    event.accepted = true;
+                                } else if (Ai.pendingFilePath.length > 0) {
                                     Ai.attachFile("");
                                     event.accepted = true;
                                 } else {
@@ -694,6 +709,21 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                         }
                     }
                 }
+                RippleButton {
+                    Layout.alignment: Qt.AlignBottom
+                    implicitWidth: 36
+                    implicitHeight: 40
+                    enabled: !Ai.requestActive
+                    onClicked: attachmentDialog.open()
+                    contentItem: MaterialSymbol {
+                        text: "attach_file"
+                        iconSize: 20
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        color: Appearance.m3colors.m3onSurfaceVariant
+                    }
+                    StyledToolTip { text: "Anexar imagem ou PDF (também aceita Ctrl+V)" }
+                }
                 RippleButton { // Send button
                     id: sendButton
                     Layout.alignment: Qt.AlignBottom
@@ -701,16 +731,19 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                     implicitWidth: 40
                     implicitHeight: 40
                     buttonRadius: Appearance.rounding.small
-                    enabled: messageInputField.text.length > 0
+                    enabled: Ai.requestActive || messageInputField.text.trim().length > 0 || Ai.pendingFilePath.length > 0
                     toggled: enabled
 
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: sendButton.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                         onClicked: {
+                            if (Ai.requestActive) {
+                                Ai.stopResponse();
+                                return;
+                            }
                             const inputText = messageInputField.text;
-                            root.handleInput(inputText);
-                            messageInputField.clear();
+                            if (root.handleInput(inputText)) messageInputField.clear();
                         }
                     }
 
@@ -719,7 +752,85 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                         horizontalAlignment: Text.AlignHCenter
                         iconSize: 22
                         color: sendButton.enabled ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer2Disabled
-                        text: "arrow_upward"
+                        text: Ai.requestActive ? "stop" : "arrow_upward"
+                    }
+                    StyledToolTip { text: Ai.requestActive ? "Parar resposta" : "Enviar mensagem" }
+                }
+            }
+
+            ColumnLayout {
+                id: modelControls
+                visible: Ai.claudeModels.length > 0 || Ai.supportsEffort
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: commandButtonsRow.top
+                anchors.margins: 8
+                spacing: 6
+
+                RowLayout {
+                    visible: Ai.claudeModels.length > 0
+                    Layout.fillWidth: true
+                    spacing: 8
+                    StyledText {
+                        text: "Modelo"
+                        Layout.preferredWidth: 48
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.m3colors.m3onSurfaceVariant
+                    }
+                    StyledComboBox {
+                        id: claudeModelSelector
+                        Layout.fillWidth: true
+                        implicitHeight: 32
+                        enabled: !Ai.requestActive
+                        textRole: "label"
+                        model: Ai.claudeModels
+                        currentIndex: model.findIndex(option => option.id === Ai.currentModelId)
+                        displayText: currentIndex >= 0 ? currentText : "Escolher Claude"
+                        onActivated: index => Ai.setModel(model[index].id)
+                    }
+                }
+
+                RowLayout {
+                    visible: Ai.supportsEffort
+                    Layout.fillWidth: true
+                    spacing: 8
+                    StyledText {
+                        text: "Esforço"
+                        Layout.preferredWidth: 48
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.m3colors.m3onSurfaceVariant
+                    }
+                    StyledComboBox {
+                        id: effortSelector
+                        Layout.fillWidth: true
+                        implicitHeight: 32
+                        enabled: !Ai.requestActive
+                        textRole: "label"
+                        model: [
+                            {label: "Rápido", value: "low"},
+                            {label: "Equilibrado", value: "medium"},
+                            {label: "Máximo", value: "max"}
+                        ]
+                        currentIndex: Math.max(0, model.findIndex(option => option.value === Ai.effort))
+                        onActivated: index => Ai.setEffort(model[index].value)
+                    }
+                }
+
+                RowLayout {
+                    visible: Ai.getModel().api_format === "anthropic"
+                    Layout.fillWidth: true
+                    spacing: 8
+                    StyledText {
+                        text: "Busca web"
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.m3colors.m3onSurfaceVariant
+                    }
+                    Item { Layout.fillWidth: true }
+                    StyledSwitch {
+                        enabled: !Ai.requestActive
+                        checked: Ai.currentTool === "search"
+                        onToggled: Ai.setTool(checked ? "search" : "none")
+                        StyledToolTip { text: "Permitir busca na web com fontes. Até 5 buscas por requisição; cobrança adicional da Anthropic." }
                     }
                 }
             }
@@ -756,7 +867,9 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                 ApiInputBoxIndicator {
                     // Tool indicator
                     icon: "service_toolbox"
-                    text: Ai.currentTool.charAt(0).toUpperCase() + Ai.currentTool.slice(1)
+                    text: Ai.getModel().api_format === "anthropic"
+                        ? (Ai.currentTool === "search" ? "Web" : "Sem busca")
+                        : Ai.currentTool.charAt(0).toUpperCase() + Ai.currentTool.slice(1)
                     tooltipText: Translation.tr("Current tool: %1\nSet it with %2tool TOOL").arg(Ai.currentTool).arg(root.commandPrefix)
                 }
 
@@ -767,6 +880,7 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                 ButtonGroup {
                     // Command buttons
                     padding: 0
+                    enabled: !Ai.requestActive
 
                     Repeater {
                         // Command buttons

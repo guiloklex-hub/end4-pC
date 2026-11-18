@@ -10,8 +10,8 @@ import QtQuick
 import qs.services.ai
 
 /**
- * Basic service to handle LLM chats. Supports Google's and OpenAI's API formats.
- * Supports Gemini and OpenAI models.
+ * Basic service to handle LLM chats, including the Anthropic Messages API.
+ * Supports Gemini, OpenAI, Mistral and Anthropic models.
  * Limitations:
  * - For now functions only work with Gemini API format
  */
@@ -23,6 +23,7 @@ Singleton {
     property Component geminiApiStrategy: GeminiApiStrategy {}
     property Component openaiApiStrategy: OpenAiApiStrategy {}
     property Component mistralApiStrategy: MistralApiStrategy {}
+    property Component anthropicApiStrategy: AnthropicApiStrategy {}
     readonly property string interfaceRole: "interface"
     readonly property string apiKeyEnvVarName: "API_KEY"
 
@@ -50,6 +51,18 @@ Singleton {
         return (key?.length > 0);
     }
     property var postResponseHook
+    property bool requestActive: false
+    property bool stopRequested: false
+    readonly property string effort: Persistent.states?.ai?.effort ?? "max"
+    readonly property var claudeModels: root.modelList
+        .filter(id => root.models[id]?.api_format === "anthropic")
+        .map(id => ({id: id, label: root.models[id].name}));
+    readonly property bool supportsEffort: getModel().api_format === "anthropic"
+        && ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1"].includes(getModel().model)
+    function setEffort(value) {
+        if (root.requestActive || !["low", "medium", "max"].includes(value)) return;
+        Persistent.states.ai.effort = value;
+    }
     property real temperature: Persistent.states?.ai?.temperature ?? 0.5
     property QtObject tokenCount: QtObject {
         property int input: -1
@@ -82,6 +95,10 @@ Singleton {
     // OpenAI: https://platform.openai.com/docs/guides/function-calling
     property string currentTool: Config?.options.ai.tool ?? "search"
     property var tools: {
+        "anthropic": {
+            "none": [],
+            "search": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}]
+        },
         "gemini": {
             "functions": [{"functionDeclarations": [
                 {
@@ -302,6 +319,7 @@ Singleton {
         "openai": openaiApiStrategy.createObject(this),
         "gemini": geminiApiStrategy.createObject(this),
         "mistral": mistralApiStrategy.createObject(this),
+        "anthropic": anthropicApiStrategy.createObject(this),
     }
     property ApiStrategy currentApiStrategy: apiStrategies[models[currentModelId]?.api_format || "openai"]
 
@@ -485,6 +503,7 @@ Singleton {
     }
 
     function setModel(modelId, feedback = true, setPersistentState = true) {
+        if (root.requestActive) return;
         if (!modelId) modelId = ""
         modelId = modelId.toLowerCase()
         if (modelList.indexOf(modelId) !== -1) {
@@ -511,6 +530,7 @@ Singleton {
     }
 
     function setTool(tool) {
+        if (root.requestActive) return false;
         if (!root.tools[models[currentModelId]?.api_format] || !(tool in root.tools[models[currentModelId]?.api_format])) {
             root.addMessage(Translation.tr("Invalid tool. Supported tools:\n- %1").arg(root.availableTools.join("\n- ")), root.interfaceRole);
             return false;
@@ -567,6 +587,7 @@ Singleton {
     }
 
     function clearMessages() {
+        if (root.requestActive) return;
         root.messageIDs = [];
         root.messageByID = ({});
         root.tokenCount.input = -1;
@@ -580,11 +601,15 @@ Singleton {
 
     Process {
         id: requester
-        property list<string> baseCommand: ["bash"]
+        property list<string> baseCommand: ["setsid", "bash"]
         property AiMessageData message
         property ApiStrategy currentStrategy
+        property bool continueAfterExit: false
+        property int serverContinuations: 0
 
         function markDone() {
+            if (!requester.message || requester.message.done) return;
+            requester.message.thinking = false;
             requester.message.done = true;
             if (root.postResponseHook) {
                 root.postResponseHook();
@@ -595,6 +620,13 @@ Singleton {
         }
 
         function makeRequest() {
+            // Tool continuations wait until the current process has released its state.
+            if (root.requestActive) {
+                requester.continueAfterExit = true;
+                return;
+            }
+            root.requestActive = true;
+            root.stopRequested = false;
             const model = models[currentModelId];
 
             // Fetch API keys if needed
@@ -610,7 +642,10 @@ Singleton {
             const endpoint = root.currentApiStrategy.buildEndpoint(model);
             const messageArray = root.messageIDs.map(id => root.messageByID[id]);
             const filteredMessageArray = messageArray.filter(message => message.role !== Ai.interfaceRole);
-            const data = root.currentApiStrategy.buildRequestData(model, filteredMessageArray, root.systemPrompt, root.temperature, root.tools[model.api_format][root.currentTool], root.pendingFilePath);
+            const data = root.currentApiStrategy.buildRequestData(model, filteredMessageArray, root.systemPrompt, root.temperature, root.tools[model.api_format]?.[root.currentTool] ?? [], root.pendingFilePath);
+            if (root.supportsEffort) {
+                data.output_config = Object.assign({}, data.output_config || {}, {effort: root.effort});
+            }
             // console.log("[Ai] Request data: ", JSON.stringify(data, null, 2));
 
             let requestHeaders = {
@@ -643,7 +678,8 @@ Singleton {
             const authHeader = requester.currentStrategy.buildAuthorizationHeader(root.apiKeyEnvVarName);
             
             /* Script shebang */
-            const scriptShebang = "#!/usr/bin/env bash\n";
+            // Stop upload helpers as well as the final streaming process.
+            const scriptShebang = "#!/usr/bin/env bash\ntrap 'trap \"\" TERM; kill -TERM -- -$$; exit 143' TERM INT\n";
 
             /* Create extra setup when there's an attached file */
             let scriptFileSetupContent = ""
@@ -655,11 +691,7 @@ Singleton {
 
             /* Create command string */
             let scriptRequestContent = ""
-            scriptRequestContent += `curl --no-buffer "${endpoint}"`
-                + ` ${headerString}`
-                + (authHeader ? ` ${authHeader}` : "")
-                + ` --data '${CF.StringUtils.shellSingleQuoteEscape(JSON.stringify(data))}'`
-                + "\n"
+            scriptRequestContent = requester.currentStrategy.buildRequestCommand(endpoint, headerString, authHeader, data);
             
             /* Send the request */
             const scriptContent = requester.currentStrategy.finalizeScriptContent(scriptShebang + scriptFileSetupContent + scriptRequestContent)
@@ -672,6 +704,7 @@ Singleton {
 
         stdout: SplitParser {
             onRead: data => {
+                if (root.stopRequested) return;
                 if (data.length === 0) return;
                 if (requester.message.thinking) requester.message.thinking = false;
                 // console.log("[Ai] Raw response line: ", data);
@@ -690,6 +723,15 @@ Singleton {
                         root.tokenCount.output = result.tokenUsage.output;
                         root.tokenCount.total = result.tokenUsage.total;
                     }
+                    if (result.continueTurn) {
+                        if (requester.serverContinuations < 3) {
+                            requester.serverContinuations++;
+                            requester.continueAfterExit = true;
+                        } else {
+                            requester.message.content += "\n\n*A pesquisa atingiu o limite de continuações. Envie outra mensagem para continuar.*";
+                            requester.message.rawContent += "\n\n*A pesquisa atingiu o limite de continuações. Envie outra mensagem para continuar.*";
+                        }
+                    }
                     if (result.finished) {
                         requester.markDone();
                     }
@@ -703,7 +745,12 @@ Singleton {
         }
 
         onExited: (exitCode, exitStatus) => {
-            const result = requester.currentStrategy.onRequestFinished(requester.message);
+            const result = root.stopRequested ? {} : requester.currentStrategy.onRequestFinished(requester.message);
+            if (root.stopRequested) {
+                requester.currentStrategy.onRequestCancelled(requester.message);
+                requester.message.content += "\n\n*Resposta interrompida por você.*";
+                requester.message.rawContent += "\n\n*Resposta interrompida por você.*";
+            }
             
             if (result.finished) {
                 requester.markDone();
@@ -715,20 +762,42 @@ Singleton {
             if (requester.message.content.includes("API key not valid")) {
                 root.addApiKeyAdvice(models[requester.message.model]);
             }
+            const shouldContinue = requester.continueAfterExit && !root.stopRequested;
+            requester.continueAfterExit = false;
+            root.requestActive = false;
+            if (shouldContinue) Qt.callLater(() => requester.makeRequest());
         }
     }
 
+    function stopResponse() {
+        if (!root.requestActive || root.stopRequested) return;
+        root.stopRequested = true;
+        root.postResponseHook = null;
+        requester.signal(15);
+    }
+
     function sendUserMessage(message) {
-        if (message.length === 0) return;
-        root.addMessage(message, "user");
+        if (root.requestActive || (!message.trim() && !root.pendingFilePath)) return false;
+        if (!root.currentModelHasApiKey) {
+            root.addApiKeyAdvice(root.getModel());
+            return false;
+        }
+        root.addMessage(message.trim() || "Analise este arquivo.", "user");
+        // Keep the original attachment on its user turn for follow-up questions and saved chats.
+        if (root.getModel().api_format === "anthropic")
+            root.messageByID[root.messageIDs[root.messageIDs.length - 1]].localFilePath = root.pendingFilePath;
+        requester.serverContinuations = 0;
         requester.makeRequest();
+        return true;
     }
 
     function attachFile(filePath: string) {
-        root.pendingFilePath = CF.FileUtils.trimFileProtocol(filePath);
+        root.pendingFilePath = filePath.startsWith("file://")
+            ? decodeURIComponent(CF.FileUtils.trimFileProtocol(filePath)) : filePath;
     }
 
     function regenerate(messageIndex) {
+        if (root.requestActive) return;
         if (messageIndex < 0 || messageIndex >= messageIDs.length) return;
         const id = root.messageIDs[messageIndex];
         const message = root.messageByID[id];
@@ -737,6 +806,7 @@ Singleton {
         for (let i = root.messageIDs.length - 1; i >= messageIndex; i--) {
             root.removeMessage(i);
         }
+        requester.serverContinuations = 0;
         requester.makeRequest();
     }
 
@@ -847,6 +917,8 @@ Singleton {
                 "done": true,
                 "annotations": message.annotations,
                 "annotationSources": message.annotationSources,
+                "anthropicContent": message.anthropicContent,
+                "searchQueries": message.searchQueries,
                 "functionName": message.functionName,
                 "functionCall": message.functionCall,
                 "functionResponse": message.functionResponse,
@@ -878,6 +950,7 @@ Singleton {
      * @param chatName name of the chat
      */
     function loadChat(chatName) {
+        if (root.requestActive) return;
         try {
             chatSaveFile.chatName = chatName.trim()
             chatSaveFile.reload()
@@ -903,6 +976,8 @@ Singleton {
                     "done": message.done,
                     "annotations": message.annotations,
                     "annotationSources": message.annotationSources,
+                    "anthropicContent": message.anthropicContent ?? [],
+                    "searchQueries": message.searchQueries ?? [],
                     "functionName": message.functionName,
                     "functionCall": message.functionCall,
                     "functionResponse": message.functionResponse,

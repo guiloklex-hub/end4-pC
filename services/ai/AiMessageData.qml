@@ -15,6 +15,7 @@ QtObject {
     property bool done: false
     property var annotations: []
     property var annotationSources: []
+    property var anthropicContent: []
     property list<string> searchQueries: []
     property string functionName
     property var functionCall

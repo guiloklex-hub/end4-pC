@@ -1,4 +1,5 @@
 import QtQuick
+import qs.modules.common.functions as CF
 
 QtObject {
     function buildEndpoint(model: AiModel): string { throw new Error("Not implemented") }
@@ -6,7 +7,12 @@ QtObject {
     function buildAuthorizationHeader(apiKeyEnvVarName: string): string { throw new Error("Not implemented") }
     function parseResponseLine(line: string, message: AiMessageData) { throw new Error("Not implemented") }
     function onRequestFinished(message: AiMessageData): var { return {} } // Default: no special handling
+    function onRequestCancelled(message: AiMessageData) { }
     function reset() { } // Reset any internal state if needed
     function buildScriptFileSetup(filePath) { return "" } // Default: no setup
     function finalizeScriptContent(scriptContent: string): string { return scriptContent } // Optionally modify/finalize script
+    function buildRequestCommand(endpoint, headers, authHeader, data) {
+        return `exec curl --no-buffer "${endpoint}" ${headers} ${authHeader || ""}`
+            + ` --data '${CF.StringUtils.shellSingleQuoteEscape(JSON.stringify(data))}'\n`;
+    }
 }
