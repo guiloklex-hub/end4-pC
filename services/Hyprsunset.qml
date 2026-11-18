@@ -83,9 +83,16 @@ Singleton {
         }
     }
 
+    // hyprsunset applies 6000K when started without flags, so always start it
+    // with --identity. Commands are retried until its IPC socket answers "ok";
+    // a fixed sleep lost the command at boot and left the screen warm.
+    function hyprsunsetCommand(args) {
+        return `for i in $(seq 1 40); do [ "$(hyprctl hyprsunset ${args} 2>/dev/null)" = ok ] && break; sleep 0.25; done`;
+    }
+
     function startHyprsunset() {
         if (root.isNiri) return;
-        Applications.launchCommand(["bash", "-c", "pidof hyprsunset || exec hyprsunset"], false, "b");
+        Applications.launchCommand(["bash", "-c", "pidof hyprsunset || exec hyprsunset --identity"], false, "b");
     }
 
     function load() {
@@ -93,7 +100,8 @@ Singleton {
             root.disableTemperature();
             return;
         }
-        Applications.launchCommand(["bash", "-c", "pidof hyprsunset || hyprsunset & disown; sleep 0.3; hyprctl hyprsunset identity"], false, "b");
+        root.startHyprsunset();
+        Quickshell.execDetached(["bash", "-c", root.hyprsunsetCommand("identity")]);
         root.temperatureActive = false;
     }
 
@@ -102,7 +110,7 @@ Singleton {
             root.startNiriSunset(root.colorTemperature);
         } else {
             root.startHyprsunset();
-            Quickshell.execDetached(["bash", "-c", `hyprctl hyprsunset temperature ${root.colorTemperature}`]);
+            Quickshell.execDetached(["bash", "-c", root.hyprsunsetCommand(`temperature ${root.colorTemperature}`)]);
         }
         root.temperatureActive = true;
     }
@@ -124,7 +132,7 @@ Singleton {
             return;
         }
         root.startHyprsunset();
-        Quickshell.execDetached(["bash", "-c", `hyprctl hyprsunset gamma ${root.gamma}`]);
+        Quickshell.execDetached(["bash", "-c", root.hyprsunsetCommand(`gamma ${root.gamma}`)]);
     }
 
     function startNiriSunset(temp) {
